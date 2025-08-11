@@ -1,13 +1,16 @@
 
+'use client'
+
 import {
   Bell,
   Home,
   Package,
-  Package2,
   Users,
   Settings,
   Diamond,
 } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,13 +29,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
+  const navLinks = [
+    { href: '/dashboard', icon: Home, label: 'Dashboard' },
+    { href: '/dashboard/jobs', icon: Package, label: 'Jobs', badge: 7 },
+    { href: '/dashboard/users', icon: Users, label: 'Users' },
+    { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
+  ];
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
@@ -49,37 +61,24 @@ export default function DashboardLayout({
           </div>
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <Home className="h-4 w-4" />
-                Dashboard
-              </Link>
-              <Link
-                href="/dashboard/jobs"
-                className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
-              >
-                <Package className="h-4 w-4" />
-                Jobs
-                <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
-                  7
-                </Badge>
-              </Link>
-              <Link
-                href="#"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <Users className="h-4 w-4" />
-                Users
-              </Link>
-              <Link
-                href="#"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <Settings className="h-4 w-4" />
-                Settings
-              </Link>
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
+                    pathname === link.href && 'bg-muted text-primary'
+                  )}
+                >
+                  <link.icon className="h-4 w-4" />
+                  {link.label}
+                  {link.badge && (
+                    <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+                      {link.badge}
+                    </Badge>
+                  )}
+                </Link>
+              ))}
             </nav>
           </div>
           <div className="mt-auto p-4">
@@ -107,7 +106,28 @@ export default function DashboardLayout({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" size="icon" className="rounded-full">
-                <Package2 className="h-5 w-5" />
+                 <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-5 w-5"
+                >
+                  <path d="M5.5 17a4.5 4.5 0 0 1-1.4-8.7" />
+                  <path d="M5.5 17a4.5 4.5 0 0 0 1.4-8.7" />
+                  <path d="M11 6a4.5 4.5 0 0 1 6-3.7" />
+                  <path d="M11 6a4.5 4.5 0 0 0-1 8.7" />
+                  <path d="M16.5 17a4.5 4.5 0 0 1-1.4-8.7" />
+                  <path d="M16.5 17a4.5 4.5 0 0 0 1.4-8.7" />
+                  <path d="m9 12.5 2-2.5 2 2.5" />
+                  <path d="m9 12.5-2 2.5" />
+                  <path d="m15 12.5 2 2.5" />
+                </svg>
                 <span className="sr-only">Toggle user menu</span>
               </Button>
             </DropdownMenuTrigger>
