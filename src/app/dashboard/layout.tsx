@@ -8,6 +8,7 @@ import {
   Users,
   Settings,
   Diamond,
+  LayoutGrid,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -30,6 +31,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Menu } from 'lucide-react';
 
 export default function DashboardLayout({
   children,
@@ -40,7 +43,7 @@ export default function DashboardLayout({
 
   const navLinks = [
     { href: '/dashboard', icon: Home, label: 'Dashboard' },
-    { href: '/dashboard/jobs', icon: Package, label: 'Jobs', badge: 7 },
+    { href: '/dashboard/jobs', icon: LayoutGrid, label: 'Job Pipeline', badge: 7 },
     { href: '/dashboard/users', icon: Users, label: 'Users' },
     { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ];
@@ -67,7 +70,8 @@ export default function DashboardLayout({
                   href={link.href}
                   className={cn(
                     'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-                    pathname === link.href && 'bg-muted text-primary'
+                    pathname.startsWith(link.href) && link.href !== '/dashboard' && 'bg-muted text-primary',
+                    pathname === '/dashboard' && link.href === '/dashboard' && 'bg-muted text-primary'
                   )}
                 >
                   <link.icon className="h-4 w-4" />
@@ -100,8 +104,47 @@ export default function DashboardLayout({
       </div>
       <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="shrink-0 md:hidden">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="flex flex-col">
+              <nav className="grid gap-2 text-lg font-medium">
+                <Link
+                  href="#"
+                  className="flex items-center gap-2 text-lg font-semibold mb-4"
+                >
+                  <Diamond className="h-6 w-6 text-primary" />
+                  <span className="">JewelFlow</span>
+                </Link>
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={cn(
+                      'flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground',
+                      pathname.startsWith(link.href) && link.href !== '/dashboard' && 'bg-muted text-foreground',
+                      pathname === '/dashboard' && link.href === '/dashboard' && 'bg-muted text-foreground'
+                    )}
+                  >
+                    <link.icon className="h-5 w-5" />
+                    {link.label}
+                    {link.badge && (
+                      <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+                        {link.badge}
+                      </Badge>
+                    )}
+                  </Link>
+                ))}
+              </nav>
+            </SheetContent>
+          </Sheet>
+
           <div className="w-full flex-1">
-            {/* Mobile nav can go here if needed */}
+             {/* Can be used for search bar */}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -141,7 +184,7 @@ export default function DashboardLayout({
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col">
+        <main className="flex flex-1 flex-col overflow-auto">
           {children}
         </main>
       </div>
