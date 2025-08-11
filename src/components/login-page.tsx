@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -12,15 +14,25 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Gem, LogIn } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 export function LoginPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const [code, setCode] = useState('');
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement actual authentication
-    router.push('/dashboard');
+    if (code === 'admin') {
+      router.push('/dashboard');
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'The unique code you entered is incorrect.',
+      });
+    }
   };
 
   return (
@@ -43,6 +55,8 @@ export function LoginPage() {
                 id="unique-code"
                 required
                 placeholder="Enter your code"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
               />
             </div>
           </CardContent>
