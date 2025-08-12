@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -65,18 +65,26 @@ const initialUsers = [
     role: 'Artisan (Casting)',
     status: 'Active',
   },
-  // This user is added to simulate a new user being created
-  // In a real application, this would be handled by a state management library or a backend
-  {
-    id: 'USR008',
-    name: 'New Filing Artisan',
-    role: 'Artisan (Filing)',
-    status: 'Active',
-  }
 ];
 
+type User = typeof initialUsers[0];
+
 export default function UsersPage() {
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    // On component mount, check if there's user data in session storage.
+    // This allows us to persist the user list state across navigation.
+    const storedUsers = sessionStorage.getItem('users');
+    if (storedUsers) {
+      setUsers(JSON.parse(storedUsers));
+    } else {
+      // If no data in storage, initialize with mock data and save it.
+      setUsers(initialUsers);
+      sessionStorage.setItem('users', JSON.stringify(initialUsers));
+    }
+  }, []);
+
   return (
     <div className="flex-1 space-y-4 p-4 lg:p-6">
       <div className="flex items-center justify-between">

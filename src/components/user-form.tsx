@@ -33,9 +33,11 @@ type User = {
 
 interface UserFormProps {
     user: User | null;
+    onSubmit: (data: any) => Promise<void>;
+    onDelete?: () => Promise<void>;
 }
 
-export function UserForm({ user }: UserFormProps) {
+export function UserForm({ user, onSubmit, onDelete }: UserFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,24 +64,20 @@ export function UserForm({ user }: UserFormProps) {
     }
 
     setIsSubmitting(true);
-    // In a real app, you'd handle form submission to your backend here
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast({
-      title: isCreateMode ? 'User Created' : 'User Updated',
-      description: isCreateMode ? 'The new user has been created.' : `Details for ${user?.name} have been updated.`,
-    });
-    router.push('/dashboard/users');
+    const formData = new FormData(event.currentTarget);
+    const data = Object.fromEntries(formData.entries());
+    if (isCreateMode) {
+        data.code = code;
+    }
+    
+    await onSubmit(data);
+
     setIsSubmitting(false);
   };
   
-  const handleDelete = () => {
-    if(confirm(`Are you sure you want to delete user ${user?.name}? This action cannot be undone.`)) {
-        toast({
-            variant: 'destructive',
-            title: 'User Deleted',
-            description: `${user?.name} has been deleted.`,
-        });
-        router.push('/dashboard/users');
+  const handleDelete = async () => {
+    if(onDelete && confirm(`Are you sure you want to delete user ${user?.name}? This action cannot be undone.`)) {
+        await onDelete();
     }
   }
 
@@ -96,11 +94,11 @@ export function UserForm({ user }: UserFormProps) {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                     <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" defaultValue={user?.name} placeholder="e.g., John Doe" required />
+                    <Input id="name" name="name" defaultValue={user?.name} placeholder="e.g., John Doe" required />
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="role">Role</Label>
-                    <Select defaultValue={user?.role}>
+                    <Select name="role" defaultValue={user?.role}>
                     <SelectTrigger id="role">
                         <SelectValue placeholder="Select a role" />
                     </SelectTrigger>
@@ -120,7 +118,7 @@ export function UserForm({ user }: UserFormProps) {
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="status">Status</Label>
-                    <Select defaultValue={user?.status ?? 'Active'}>
+                    <Select name="status" defaultValue={user?.status ?? 'Active'}>
                     <SelectTrigger id="status">
                         <SelectValue placeholder="Select a status" />
                     </SelectTrigger>
@@ -135,12 +133,13 @@ export function UserForm({ user }: UserFormProps) {
                     <div className="flex gap-2">
                       <Input 
                         id="unique-code" 
+                        name="code"
                         value={isCreateMode ? code : '****'} 
                         onChange={(e) => setCode(e.target.value)}
                         placeholder="4-6 digit code"
                         readOnly={!isCreateMode} 
                         disabled={!isCreateMode}
-                        required
+                        required={isCreateMode}
                         minLength={4}
                         maxLength={6}
                         pattern="\d{4,6}"

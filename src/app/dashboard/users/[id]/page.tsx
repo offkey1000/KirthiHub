@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { UserForm } from '@/components/user-form';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from 'react';
 
 const users = [
   {
@@ -51,12 +53,60 @@ const users = [
   },
 ];
 
+type User = typeof users[0];
+
 export default function UserDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const { toast } = useToast();
   const userId = params.id;
+  const [user, setUser] = useState<User | null>(null);
 
-  const user = users.find((u) => u.id === userId);
+  useEffect(() => {
+    // In a real app, this would be a fetch call.
+    // For now, we simulate fetching from our mock data.
+    // We also check session storage for any updates from the user list page.
+    const storedUsers = JSON.parse(sessionStorage.getItem('users') || '[]');
+    const allUsers = storedUsers.length > 0 ? storedUsers : users;
+    const foundUser = allUsers.find((u: User) => u.id === userId) || null;
+    setUser(foundUser);
+  }, [userId]);
+
+
+  const handleUpdateUser = async (data: any) => {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Update user in session storage to persist across navigation
+    const storedUsers = JSON.parse(sessionStorage.getItem('users') || '[]');
+    const updatedUsers = storedUsers.map((u: User) => 
+        u.id === userId ? { ...u, ...data } : u
+    );
+    sessionStorage.setItem('users', JSON.stringify(updatedUsers));
+
+    toast({
+      title: 'User Updated',
+      description: `Details for ${data.name} have been updated.`,
+    });
+    router.push('/dashboard/users');
+  };
+
+  const handleDeleteUser = async () => {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Remove user from session storage
+    const storedUsers = JSON.parse(sessionStorage.getItem('users') || '[]');
+    const updatedUsers = storedUsers.filter((u: User) => u.id !== userId);
+    sessionStorage.setItem('users', JSON.stringify(updatedUsers));
+
+    toast({
+      variant: 'destructive',
+      title: 'User Deleted',
+      description: `${user?.name} has been deleted.`,
+    });
+    router.push('/dashboard/users');
+  };
 
   if (!user) {
     return (
@@ -75,7 +125,7 @@ export default function UserDetailPage() {
         </Button>
         <h1 className="text-lg font-semibold md:text-2xl">User Details</h1>
       </div>
-      <UserForm user={user} />
+      <UserForm user={user} onSubmit={handleUpdateUser} onDelete={handleDeleteUser} />
     </div>
   );
 }
