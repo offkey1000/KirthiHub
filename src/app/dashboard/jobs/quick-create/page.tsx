@@ -14,10 +14,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Camera, RefreshCcw, Check, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Camera, RefreshCcw, Check, AlertTriangle, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const initialJobs = [
     {
@@ -50,6 +51,8 @@ export default function QuickCreateJobPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
 
 
  useEffect(() => {
@@ -102,6 +105,24 @@ export default function QuickCreateJobPage() {
   const handleRetake = () => {
     setCapturedImage(null);
   };
+  
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (selectedFile) {
+        setFile(selectedFile);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setUploadedImage(reader.result as string);
+        };
+        reader.readAsDataURL(selectedFile);
+    }
+  };
+
+  const handleRemoveUploadedImage = () => {
+      setFile(null);
+      setUploadedImage(null);
+  };
+
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -109,6 +130,13 @@ export default function QuickCreateJobPage() {
 
     const formData = new FormData(event.currentTarget);
     const data = Object.fromEntries(formData.entries());
+    const imageToSave = capturedImage || uploadedImage;
+
+    if (!imageToSave) {
+        toast({ variant: 'destructive', title: 'Image Required', description: 'Please capture or upload an image.'});
+        setIsSubmitting(false);
+        return;
+    }
 
     const storedJobs = JSON.parse(sessionStorage.getItem('jobs') || '[]');
     const allJobs = storedJobs.length > 0 ? storedJobs : initialJobs;
@@ -136,7 +164,7 @@ export default function QuickCreateJobPage() {
         diamondWeight: 0,
         stoneWeight: 0,
         description: '',
-        images: capturedImage ? [capturedImage] : [],
+        images: [imageToSave],
         status: 'Pending Approval',
         stage: 'Pending' as 'Pending',
         assignedTo: null,
@@ -171,40 +199,73 @@ export default function QuickCreateJobPage() {
         <h1 className="text-lg font-semibold md:text-2xl">Quick Create Stock Job</h1>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Camera Capture</CardTitle>
-          <CardDescription>
-            Point your camera at the item and capture a photo.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-           {hasCameraPermission === false && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertTitle>Camera Access Required</AlertTitle>
-                  <AlertDescription>
-                    Please allow camera access in your browser settings to use this feature.
-                  </AlertDescription>
-                </Alert>
-            )}
-            <div className="relative aspect-video w-full max-w-md mx-auto bg-muted rounded-lg overflow-hidden">
-                {capturedImage ? (
-                     <Image src={capturedImage} alt="Captured image" layout="fill" objectFit="contain" />
-                ) : (
-                    <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
-                )}
-                 <canvas ref={canvasRef} className="hidden" />
-            </div>
-            <div className="flex justify-center gap-4">
-                {capturedImage ? (
-                    <Button onClick={handleRetake} variant="outline"><RefreshCcw className="mr-2"/>Retake</Button>
-                ) : (
-                    <Button onClick={handleCapture} disabled={!hasCameraPermission}><Camera className="mr-2"/>Capture Photo</Button>
-                )}
-            </div>
-        </CardContent>
-      </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle>Add Image</CardTitle>
+                <CardDescription>
+                    Use your camera to take a photo or upload one from your device.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Tabs defaultValue="camera" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="camera">Camera</TabsTrigger>
+                        <TabsTrigger value="upload">Upload</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="camera" className="mt-4">
+                        {hasCameraPermission === false && (
+                            <Alert variant="destructive" className="mb-4">
+                              <AlertTriangle className="h-4 w-4" />
+                              <AlertTitle>Camera Access Required</AlertTitle>
+                              <AlertDescription>
+                                Please allow camera access in your browser settings to use this feature.
+                              </AlertDescription>
+                            </Alert>
+                        )}
+                        <div className="relative aspect-video w-full max-w-md mx-auto bg-muted rounded-lg overflow-hidden">
+                            {capturedImage ? (
+                                 <Image src={capturedImage} alt="Captured image" layout="fill" objectFit="contain" />
+                            ) : (
+                                <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
+                            )}
+                             <canvas ref={canvasRef} className="hidden" />
+                        </div>
+                        <div className="flex justify-center gap-4 mt-4">
+                            {capturedImage ? (
+                                <Button onClick={handleRetake} variant="outline"><RefreshCcw className="mr-2"/>Retake</Button>
+                            ) : (
+                                <Button onClick={handleCapture} disabled={!hasCameraPermission}><Camera className="mr-2"/>Capture Photo</Button>
+                            )}
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="upload" className="mt-4">
+                         {uploadedImage ? (
+                            <div className="w-full max-w-md mx-auto">
+                                <div className="relative group aspect-video">
+                                  <Image src={uploadedImage} alt="Uploaded preview" layout="fill" objectFit="contain" className="rounded-md"/>
+                                  <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100" onClick={handleRemoveUploadedImage}>
+                                      <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                            </div>
+                         ) : (
+                            <div className="flex items-center justify-center w-full">
+                                <Label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
+                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                        <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
+                                        <p className="mb-2 text-sm text-muted-foreground">
+                                            <span className="font-semibold">Click to upload</span> or drag and drop
+                                        </p>
+                                    </div>
+                                    <Input id="dropzone-file" type="file" className="hidden" onChange={handleImageUpload} accept="image/*" />
+                                </Label>
+                            </div>
+                         )}
+                    </TabsContent>
+                </Tabs>
+            </CardContent>
+        </Card>
+
 
       <Card>
         <CardHeader>
@@ -224,7 +285,7 @@ export default function QuickCreateJobPage() {
                  <Button type="button" variant="outline" onClick={() => router.push('/dashboard/jobs')}>
                     Cancel
                 </Button>
-                <Button type="submit" disabled={isSubmitting || !capturedImage}>
+                <Button type="submit" disabled={isSubmitting || (!capturedImage && !uploadedImage)}>
                     <Check className="mr-2"/>
                     {isSubmitting ? 'Creating Job...' : 'Create Quick Job'}
                 </Button>
