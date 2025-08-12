@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, MessageSquare, Paperclip, Send, User } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Paperclip, Send, User, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,35 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 
 const initialJobs = [
     {
@@ -35,21 +64,121 @@ const initialJobs = [
   },
 ];
 
+const initialUsers = [
+  {
+    id: 'USR001',
+    name: 'Admin User',
+    role: 'Admin',
+    status: 'Active',
+    code: '4243',
+  },
+  {
+    id: 'USR006',
+    name: 'CAD Artisan',
+    role: 'Artisan (CAD)',
+    status: 'Inactive',
+  },
+  {
+    id: 'USR007',
+    name: 'Casting Artisan',
+    role: 'Artisan (Casting)',
+    status: 'Active',
+  },
+];
+
+
 type Job = typeof initialJobs[0];
+type User = typeof initialUsers[0];
 
 const JobDetailPage = () => {
     const router = useRouter();
     const params = useParams();
+    const { toast } = useToast();
     const jobId = params.id as string;
     const [job, setJob] = useState<Job | null>(null);
-
-     useEffect(() => {
+    const [artisans, setArtisans] = useState<User[]>([]);
+    const [selectedArtisan, setSelectedArtisan] = useState('');
+    const [rejectionReason, setRejectionReason] = useState('');
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    
+    useEffect(() => {
         const storedJobs = JSON.parse(sessionStorage.getItem('jobs') || '[]');
         const allJobs = storedJobs.length > 0 ? storedJobs : initialJobs;
         const foundJob = allJobs.find((j: Job) => j.id === jobId) || null;
         setJob(foundJob);
+
+        const storedUsers = JSON.parse(sessionStorage.getItem('users') || '[]');
+        const allUsers = storedUsers.length > 0 ? storedUsers : initialUsers;
+        const artisanUsers = allUsers.filter((u: User) => u.role.startsWith('Artisan') && u.status === 'Active');
+        setArtisans(artisanUsers);
     }, [jobId]);
 
+    const updateJobInStorage = (updatedJob: Job) => {
+        const storedJobs = JSON.parse(sessionStorage.getItem('jobs') || '[]');
+        const allJobs = storedJobs.length > 0 ? storedJobs : initialJobs;
+        const updatedJobs = allJobs.map((j: Job) => (j.id === updatedJob.id ? updatedJob : j));
+        sessionStorage.setItem('jobs', JSON.stringify(updatedJobs));
+        setJob(updatedJob);
+    };
+
+    const handleAssignJob = () => {
+        if (!job || !selectedArtisan) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please select an artisan.' });
+            return;
+        }
+        const artisan = artisans.find(a => a.id === selectedArtisan);
+        if (!artisan) return;
+
+        const newHistoryEntry = {
+            user: 'Manufacturing Manager',
+            action: `Assigned job to ${artisan.name} (${artisan.role})`,
+            timestamp: new Date().toISOString(),
+        };
+
+        const updatedJob = {
+            ...job,
+            status: `Assigned to ${artisan.name}`,
+            history: [...job.history, newHistoryEntry],
+        };
+
+        updateJobInStorage(updatedJob);
+
+        toast({
+            title: 'Job Assigned',
+            description: `${job.title} has been assigned to ${artisan.name}.`,
+        });
+        setIsDialogOpen(false);
+        setSelectedArtisan('');
+    };
+    
+    const handleRejectJob = () => {
+        if (!job || !rejectionReason) {
+             toast({ variant: 'destructive', title: 'Error', description: 'Please provide a reason for rejection.' });
+            return;
+        }
+
+        const newHistoryEntry = {
+            user: 'Manufacturing Manager',
+            action: `Job Rejected. Reason: ${rejectionReason}`,
+            timestamp: new Date().toISOString(),
+        };
+
+        const updatedJob = {
+            ...job,
+            status: `Rejected`,
+            stage: 'Pending' as const, // Move back to pending stage
+            history: [...job.history, newHistoryEntry],
+        };
+
+        updateJobInStorage(updatedJob);
+
+        toast({
+            variant: 'destructive',
+            title: 'Job Rejected',
+            description: `${job.title} has been rejected and sent back.`,
+        });
+        setRejectionReason('');
+    };
 
     if (!job) {
         return (
@@ -185,9 +314,72 @@ const JobDetailPage = () => {
                             <CardTitle>Actions</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2">
-                            <Button className="w-full">Assign to Artisan</Button>
+                             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button className="w-full">Assign to Artisan</Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-[425px]">
+                                    <DialogHeader>
+                                        <DialogTitle>Assign Job to Artisan</DialogTitle>
+                                        <DialogDescription>
+                                            Select an artisan to assign this job to. They will be notified.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="grid gap-4 py-4">
+                                        <div className="grid grid-cols-4 items-center gap-4">
+                                            <Label htmlFor="artisan" className="text-right">
+                                                Artisan
+                                            </Label>
+                                            <Select value={selectedArtisan} onValueChange={setSelectedArtisan}>
+                                                <SelectTrigger id="artisan" className="col-span-3">
+                                                    <SelectValue placeholder="Select an artisan" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {artisans.map(artisan => (
+                                                        <SelectItem key={artisan.id} value={artisan.id}>
+                                                            {artisan.name} - {artisan.role}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                    <DialogFooter>
+                                        <Button type="button" onClick={handleAssignJob}>Assign Job</Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+
                             <Button variant="secondary" className="w-full">Mark as Complete</Button>
-                            <Button variant="destructive" className="w-full">Reject / Send Back</Button>
+                            
+                             <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" className="w-full">Reject / Send Back</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure you want to reject this job?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This action will send the job back to the previous stage. Please provide a reason for rejection.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                     <div className="space-y-2">
+                                        <Label htmlFor="reason">Rejection Reason</Label>
+                                        <Textarea 
+                                            id="reason" 
+                                            placeholder="e.g., Casting issue, design not as per spec..." 
+                                            value={rejectionReason}
+                                            onChange={(e) => setRejectionReason(e.target.value)}
+                                        />
+                                    </div>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleRejectJob} disabled={!rejectionReason}>
+                                            Confirm Rejection
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </CardContent>
                     </Card>
                 </div>
