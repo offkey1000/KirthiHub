@@ -363,18 +363,15 @@ const JobDetailPage = () => {
     const isManager = loggedInUser.role.includes('Manager');
     const isQcManager = loggedInUser.role === 'QC Manager';
 
-    const isJobAssignedToMe = isArtisan && job.assignedTo === loggedInUser.id;
-
-    // Actions Visibility
-    const showManagerInitialAssign = isManager && job.stage === 'Pending';
-    const showManagerReassign = isManager && job.stage === 'WIP' && !job.assignedTo && job.status !== 'QC Pending';
-    const showManagerReject = isManager && job.stage === 'WIP' && !!job.assignedTo;
-    const showManagerReadyForQc = isManager && job.stage === 'WIP';
+    // Simplified conditions for action visibility
+    const canAssign = isManager && (job.stage === 'Pending' || (job.stage === 'WIP' && !job.assignedTo && job.status !== 'QC Pending'));
+    const canReject = isManager && job.stage === 'WIP' && !!job.assignedTo;
+    const canSendToQc = isManager && job.stage === 'WIP' && job.status !== 'QC Pending';
+    const canBeAcceptedByArtisan = isArtisan && job.assignedTo === loggedInUser.id && job.status.startsWith('Assigned to');
+    const canBeWorkedOnByArtisan = isArtisan && job.assignedTo === loggedInUser.id && (job.status.startsWith('In Progress') || job.status.startsWith('Rejected by'));
+    const canBeQcApproved = isQcManager && job.status === 'QC Pending';
     
-    const showArtisanAccept = isJobAssignedToMe && job.status.startsWith('Assigned to');
-    const showArtisanWork = isJobAssignedToMe && (job.status.startsWith('In Progress') || job.status.startsWith('Rejected by'));
-    
-    const showQcActions = isQcManager && job.status === 'QC Pending';
+    const hasNoActions = !canAssign && !canReject && !canSendToQc && !canBeAcceptedByArtisan && !canBeWorkedOnByArtisan && !canBeQcApproved;
 
     return (
         <div className="flex-1 space-y-4 p-4 lg:p-6">
@@ -495,10 +492,10 @@ const JobDetailPage = () => {
                         </CardHeader>
                         <CardContent className="space-y-2">
                             {/* Artisan Actions */}
-                            { showArtisanAccept && (
+                            { canBeAcceptedByArtisan && (
                                 <Button className="w-full" onClick={() => handleArtisanAction('Accepted')}>Accept Job</Button>
                             )}
-                            { showArtisanWork && (
+                            { canBeWorkedOnByArtisan && (
                                 <>
                                     <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
                                         <DialogTrigger asChild>
@@ -545,10 +542,10 @@ const JobDetailPage = () => {
                             )}
                             
                             {/* Manager Actions */}
-                            { (showManagerInitialAssign || showManagerReassign) && (
+                            { canAssign && (
                                 <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
                                     <DialogTrigger asChild>
-                                        <Button className="w-full">{showManagerInitialAssign ? 'Approve & Assign' : 'Assign to Next Artisan'}</Button>
+                                        <Button className="w-full">{job.stage === 'Pending' ? 'Approve & Assign' : 'Assign to Next Artisan'}</Button>
                                     </DialogTrigger>
                                     <DialogContent className="sm:max-w-[425px]">
                                         <DialogHeader>
@@ -582,10 +579,10 @@ const JobDetailPage = () => {
                                     </DialogContent>
                                 </Dialog>
                             )}
-                            { showManagerReadyForQc && !showManagerInitialAssign && !showManagerReassign &&(
+                            { canSendToQc && (
                                 <Button className="w-full" variant="secondary" onClick={handleManagerReadyForQc}>Ready for QC</Button>
                             )}
-                            { showManagerReject && (
+                            { canReject && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button variant="destructive" className="w-full">Reject Artisan's Work</Button>
@@ -617,7 +614,7 @@ const JobDetailPage = () => {
                             )}
                             
                             {/* QC Manager Actions */}
-                             { showQcActions && (
+                             { canBeQcApproved && (
                                 <>
                                     <Button className="w-full" onClick={() => handleQcAction('approve')}>
                                         <ShieldCheck className="mr-2 h-4 w-4" />
@@ -656,8 +653,14 @@ const JobDetailPage = () => {
                                     </AlertDialog>
                                 </>
                             )}
-                             { !showManagerInitialAssign && !showManagerReassign && !showManagerReject && !showArtisanAccept && !showArtisanWork && !showQcActions && !showManagerReadyForQc &&(
+                             { hasNoActions && job.stage !== 'Completed' && (
                                 <p className="text-sm text-muted-foreground text-center">No actions available for you at this stage.</p>
+                             )}
+                              { job.stage === 'Completed' && (
+                                <p className="text-sm text-muted-foreground text-center flex items-center justify-center gap-2">
+                                    <CheckCircle className="h-4 w-4 text-green-500"/>
+                                    Job Completed
+                                </p>
                              )}
                         </CardContent>
                     </Card>
