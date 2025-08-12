@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -24,7 +25,7 @@ export function LoginPage() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement actual authentication
-    if (code === 'admin') {
+    if (code === '4243') {
       router.push('/dashboard');
     } else {
       toast({
