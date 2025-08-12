@@ -98,6 +98,13 @@ const initialUsers = [
     code: '4243',
   },
   {
+    id: 'USR003',
+    name: 'Manufacturing Manager',
+    role: 'Manufacturing Manager',
+    status: 'Active',
+    code: '1234',
+  },
+  {
     id: 'USR005',
     name: 'QC Manager',
     role: 'QC Manager',
@@ -267,11 +274,13 @@ const JobDetailPage = () => {
         
         const isAccepting = action === 'Accepted';
         const newStatus = isAccepting ? `In Progress (${loggedInUser.name})` : `QC Pending`;
+        const newStage = isAccepting ? 'WIP' : 'WIP'; // Stays in WIP until QC approves
         const actionText = isAccepting ? 'Accepted Job' : `Marked as Complete`;
 
         const updatedJob = {
             ...job,
             status: newStatus,
+            stage: newStage as 'WIP',
             history: [...job.history, {
                 user: loggedInUser.name,
                 action: actionText,
@@ -282,23 +291,7 @@ const JobDetailPage = () => {
         updateJobInStorage(updatedJob);
         toast({ title: 'Success', description: `Job status updated: ${newStatus}` });
     };
-
-    const handleManagerMarkAsComplete = () => {
-        if (!job || !loggedInUser) return;
-
-        const updatedJob = {
-            ...job,
-            status: 'QC Pending',
-            history: [...job.history, {
-                user: loggedInUser.name,
-                action: 'Forwarded to QC',
-                timestamp: new Date().toISOString(),
-            }],
-        };
-        updateJobInStorage(updatedJob);
-        toast({ title: 'Success', description: 'Job has been sent for Quality Control.' });
-    }
-
+    
     const handleQcAction = (action: 'approve' | 'reject') => {
         if (!job || !loggedInUser) return;
 
@@ -348,9 +341,13 @@ const JobDetailPage = () => {
     const isManager = loggedInUser?.role.includes('Manager');
     const isQcManager = loggedInUser?.role === 'QC Manager';
 
-    // A manager can reject any job that an artisan is working on (or has just finished)
-    // The job should not be pending approval or already fully completed.
-    const canManagerReject = job.status !== 'Pending Approval' && job.status !== 'Completed';
+    const canManagerAssign = job.status === 'Pending Approval' || !job.assignedTo;
+    const canArtisanAccept = job.status.startsWith('Assigned to');
+    const canArtisanWork = job.status.startsWith('In Progress') || job.status.startsWith('Rejected by');
+    const canArtisanComplete = canArtisanWork;
+    const canManagerReject = job.stage === 'WIP' && job.assignedTo !== null && job.status !== 'QC Pending';
+    const canQcAct = job.status === 'QC Pending';
+
 
     return (
         <div className="flex-1 space-y-4 p-4 lg:p-6">
@@ -470,12 +467,12 @@ const JobDetailPage = () => {
                             <CardTitle>Actions</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2">
-                             { isArtisan && job.assignedTo === loggedInUser?.id && !job.status.includes('Completed') && !job.status.includes('QC') && (
+                             { isArtisan && job.assignedTo === loggedInUser?.id && job.stage !== 'Completed' && (
                                 <>
-                                    <Button className="w-full" onClick={() => handleArtisanAction('Accepted')} disabled={job.status.startsWith('In Progress') || job.status.startsWith('Rejected')}>Accept Job</Button>
+                                    <Button className="w-full" onClick={() => handleArtisanAction('Accepted')} disabled={!canArtisanAccept}>Accept Job</Button>
                                     <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
                                         <DialogTrigger asChild>
-                                            <Button variant="secondary" className="w-full">Upload Finished Work</Button>
+                                            <Button variant="secondary" className="w-full" disabled={!canArtisanWork}>Upload Finished Work</Button>
                                         </DialogTrigger>
                                         <DialogContent>
                                             <DialogHeader>
@@ -513,14 +510,14 @@ const JobDetailPage = () => {
                                             </DialogFooter>
                                         </DialogContent>
                                     </Dialog>
-                                    <Button className="w-full" onClick={() => handleArtisanAction('Completed')} disabled={!job.status.startsWith('In Progress') && !job.status.startsWith('Rejected')}>Mark as Complete</Button>
+                                    <Button className="w-full" onClick={() => handleArtisanAction('Completed')} disabled={!canArtisanComplete}>Mark as Complete</Button>
                                 </>
                             )}
                             { isManager && (
                                 <>
                                     <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
                                         <DialogTrigger asChild>
-                                            <Button className="w-full">Assign to Artisan</Button>
+                                            <Button className="w-full" disabled={!canManagerAssign}>Assign to Artisan</Button>
                                         </DialogTrigger>
                                         <DialogContent className="sm:max-w-[425px]">
                                             <DialogHeader>
@@ -553,8 +550,6 @@ const JobDetailPage = () => {
                                             </DialogFooter>
                                         </DialogContent>
                                     </Dialog>
-
-                                    <Button variant="secondary" className="w-full" onClick={handleManagerMarkAsComplete} disabled={job.status !== 'QC Pending'}>Forward to QC</Button>
                                     
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
@@ -586,7 +581,7 @@ const JobDetailPage = () => {
                                     </AlertDialog>
                                 </>
                             )}
-                             { isQcManager && job.status === 'QC Pending' && (
+                             { isQcManager && canQcAct && (
                                 <>
                                     <Button className="w-full" variant="secondary" onClick={() => handleQcAction('approve')}>
                                         <ShieldCheck className="mr-2 h-4 w-4" />
