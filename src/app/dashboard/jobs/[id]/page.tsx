@@ -178,20 +178,22 @@ const JobDetailPage = () => {
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFiles = event.target.files;
         if (selectedFiles) {
-        const newFiles = Array.from(selectedFiles);
-        setFiles((prevFiles) => [...prevFiles, ...newFiles]);
-        const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
-        setImagePreviews((prevPreviews) => [...prevPreviews, ...newPreviews]);
+            const newFiles = Array.from(selectedFiles);
+            setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+
+            newFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setImagePreviews(prev => [...prev, reader.result as string]);
+                };
+                reader.readAsDataURL(file);
+            });
         }
     };
     
     const handleRemoveImage = (index: number) => {
         setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
-        setImagePreviews((prevPreviews) => {
-        const newPreviews = prevPreviews.filter((_, i) => i !== index);
-        URL.revokeObjectURL(prevPreviews[index]);
-        return newPreviews;
-        });
+        setImagePreviews((prevPreviews) => prevPreviews.filter((_, i) => i !== index));
     };
 
     const handleUploadImages = () => {
@@ -247,7 +249,7 @@ const JobDetailPage = () => {
              toast({ variant: 'destructive', title: 'Error', description: 'Please provide a reason for rejection.' });
             return;
         }
-        const assignedArtisan = artisans.find(a => a.id === job.assignedTo);
+        const assignedArtisan = initialUsers.find(a => a.id === job.assignedTo);
         if(!assignedArtisan) return;
 
         const updatedJob = {
@@ -275,7 +277,7 @@ const JobDetailPage = () => {
      const handleApproveArtisanWork = () => {
         if (!job || !job.assignedTo) return;
         
-        const assignedArtisan = artisans.find(a => a.id === job.assignedTo);
+        const assignedArtisan = initialUsers.find(a => a.id === job.assignedTo);
         if (!assignedArtisan) return;
         const artisanRole = assignedArtisan.role.replace('Artisan (', '').replace(')', '');
 
@@ -393,8 +395,8 @@ const JobDetailPage = () => {
     // Manager Actions Visibility
     const showApproveAndAssign = isManager && job.stage === 'Pending';
     const showAssignNextArtisan = isManager && job.stage === 'WIP' && !job.assignedTo;
-    const showReadyForQC = isManager && job.stage === 'WIP';
     const showManagerReviewActions = isManager && job.stage === 'WIP' && !!job.assignedTo;
+    const showReadyForQC = isManager && job.stage === 'WIP';
    
     // Artisan Actions Visibility
     const showAcceptJob = isArtisan && job.assignedTo === loggedInUser.id && job.status.startsWith('Assigned to');
@@ -458,7 +460,15 @@ const JobDetailPage = () => {
                                 {job.images.length > 0 ? (
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                         {job.images.map((src, index) => (
-                                            <Image key={index} src={src.startsWith('/') ? `https://placehold.co/300x300.png` : src} alt={`Reference ${index + 1}`} width={200} height={200} className="rounded-lg object-cover" />
+                                            <Image 
+                                                key={index} 
+                                                src={src.startsWith('data:') ? src : `https://placehold.co/300x300.png`} 
+                                                alt={`Reference ${index + 1}`} 
+                                                width={200} 
+                                                height={200} 
+                                                className="rounded-lg object-cover"
+                                                data-ai-hint={src.startsWith('data:') ? undefined : 'jewelry design'}
+                                            />
                                         ))}
                                     </div>
                                 ) : (

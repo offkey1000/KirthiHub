@@ -60,21 +60,22 @@ export default function CreateJobPage() {
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = event.target.files;
     if (selectedFiles) {
-      const newFiles = Array.from(selectedFiles);
-      setFiles((prevFiles) => [...prevFiles, ...newFiles]);
-      const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
-      setImagePreviews((prevPreviews) => [...prevPreviews, ...newPreviews]);
+        const newFiles = Array.from(selectedFiles);
+        setFiles(prev => [...prev, ...newFiles]);
+
+        newFiles.forEach(file => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreviews(prev => [...prev, reader.result as string]);
+            };
+            reader.readAsDataURL(file);
+        });
     }
   };
   
   const handleRemoveImage = (index: number) => {
     setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
-    setImagePreviews((prevPreviews) => {
-      const newPreviews = prevPreviews.filter((_, i) => i !== index);
-      // Revoke object URL to prevent memory leaks
-      URL.revokeObjectURL(prevPreviews[index]);
-      return newPreviews;
-    });
+    setImagePreviews((prevPreviews) => prevPreviews.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -83,9 +84,7 @@ export default function CreateJobPage() {
 
     const formData = new FormData(event.currentTarget);
     const data = Object.fromEntries(formData.entries());
-
-    // In a real app, you'd handle file uploads to a server.
-    // For this prototype, we'll just use the local object URLs for display.
+    
     const newJob = {
         id: `${data.orderType === 'Customer' ? 'ORD' : 'STK'}${Math.floor(Math.random() * 900) + 100}`,
         title: `${data.ornamentType} (${data.orderType})`,
@@ -98,9 +97,10 @@ export default function CreateJobPage() {
         diamondWeight: Number(data.diamondWeight),
         stoneWeight: Number(data.stoneWeight),
         description: data.description as string,
-        images: imagePreviews, // Storing blob URLs for prototype
+        images: imagePreviews, // Storing base64 data URIs
         status: 'Pending Approval',
         stage: 'Pending' as 'Pending',
+        assignedTo: null,
         history: [
             { user: 'Current User', action: 'Created Job', timestamp: new Date().toISOString() }
         ]
