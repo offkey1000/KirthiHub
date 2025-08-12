@@ -368,7 +368,7 @@ const JobDetailPage = () => {
 
     // Manager Actions Visibility
     const showManagerInitialAssign = isManager && job.stage === 'Pending';
-    const showManagerReassign = isManager && job.stage === 'WIP' && !job.assignedTo && job.status !== 'QC Pending';
+    const showManagerReassign = isManager && job.stage === 'WIP' && !job.assignedTo && job.status !== 'QC Pending' && job.status !== 'Rejected by QC';
     const showManagerReject = isManager && job.stage === 'WIP' && !!job.assignedTo;
     const showManagerReadyForQc = isManager && job.stage === 'WIP' && job.status !== 'QC Pending';
 
@@ -671,5 +671,7 @@ const JobDetailPage = () => {
 };
 
 export default JobDetailPage;
+
+    
 
     
