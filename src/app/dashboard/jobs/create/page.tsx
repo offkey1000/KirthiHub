@@ -22,20 +22,44 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload } from 'lucide-react';
+import { ArrowLeft, Upload, X } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function CreateJobPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [orderType, setOrderType] = useState('Customer');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = event.target.files;
+    if (selectedFiles) {
+      const newFiles = Array.from(selectedFiles);
+      setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+      const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
+      setImagePreviews((prevPreviews) => [...prevPreviews, ...newPreviews]);
+    }
+  };
+  
+  const handleRemoveImage = (index: number) => {
+    setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
+    setImagePreviews((prevPreviews) => {
+      const newPreviews = prevPreviews.filter((_, i) => i !== index);
+      // Revoke object URL to prevent memory leaks
+      URL.revokeObjectURL(prevPreviews[index]);
+      return newPreviews;
+    });
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSubmitting(true);
 
-    // TODO: Implement actual job creation logic
+    // TODO: Implement actual job creation logic including file uploads
+    console.log('Selected files:', files);
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     toast({
@@ -154,9 +178,33 @@ export default function CreateJobPage() {
                           </p>
                           <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</p>
                       </div>
-                      <Input id="dropzone-file" type="file" className="hidden" multiple />
+                      <Input id="dropzone-file" type="file" className="hidden" multiple onChange={handleImageChange} accept="image/*" />
                   </Label>
               </div>
+                {imagePreviews.length > 0 && (
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {imagePreviews.map((src, index) => (
+                    <div key={index} className="relative group">
+                      <Image
+                        src={src}
+                        alt={`Preview ${index}`}
+                        width={150}
+                        height={150}
+                        className="rounded-md object-cover w-full aspect-square"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100"
+                        onClick={() => handleRemoveImage(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2">
