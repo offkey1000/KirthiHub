@@ -363,7 +363,7 @@ const JobDetailPage = () => {
     const isJobAssignedToMe = isArtisan && job.assignedTo === loggedInUser.id;
 
     const showManagerAssign = isManager && (job.status === 'Pending Approval' || !job.assignedTo);
-    const showManagerReject = isManager && job.stage === 'WIP' && job.status !== 'Pending Approval';
+    const showManagerReject = isManager && job.stage === 'WIP' && job.status !== 'Pending Approval' && job.status !== 'QC Pending' && !job.status.startsWith('Assigned to');
     const showManagerApproveForQc = isManager && job.status === 'Ready for Manager Review';
     
     const showArtisanAccept = isJobAssignedToMe && job.status.startsWith('Assigned to');
@@ -630,7 +630,7 @@ const JobDetailPage = () => {
                                                 <AlertDialogTitle>Are you sure you want to reject this work?</AlertDialogTitle>
                                                 <AlertDialogDescription>
                                                     This action will send the job back for rework. Please provide a reason for this QC rejection.
-                                                </Description>
+                                                </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <div className="space-y-2">
                                                 <Label htmlFor="reason">Rejection Reason</Label>
@@ -663,3 +663,5 @@ const JobDetailPage = () => {
 };
 
 export default JobDetailPage;
+
+    
