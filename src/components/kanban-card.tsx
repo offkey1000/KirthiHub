@@ -63,20 +63,17 @@ export function KanbanCard({ job, isOverlay }: { job: Job, isOverlay?: boolean }
         isOverlay && "ring-2 ring-primary shadow-lg"
       )}
     >
-      <div {...attributes} {...listeners} data-dnd-handle className="sr-only">
-        Drag Handle
-      </div>
-
-      <CardHeader className="p-4 relative flex flex-row items-start justify-between">
+      <CardHeader className="p-4 flex flex-row items-start justify-between">
         <CardTitle className="text-base font-medium pr-6">{job.title}</CardTitle>
-         <div 
+         <button 
           {...attributes}
           {...listeners}
-          className="p-1 text-muted-foreground cursor-grab active:cursor-grabbing flex-shrink-0"
+          data-dnd-handle
+          className="p-1 text-muted-foreground cursor-grab active:cursor-grabbing flex-shrink-0 -mt-1 -mr-1"
            onClick={(e) => e.stopPropagation()} // Prevent card click when grabbing handle
         >
             <GripVertical className="h-5 w-5" />
-        </div>
+        </button>
       </CardHeader>
       <CardContent className="p-4 pt-0 space-y-3">
         <div className="text-sm text-muted-foreground">{job.id} &middot; {job.orderType}</div>
