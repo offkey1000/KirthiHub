@@ -71,9 +71,11 @@ export default function UsersPage() {
     <div className="flex-1 space-y-4 p-4 lg:p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold md:text-2xl">Users</h1>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Create New User
+        <Button asChild>
+          <Link href="/dashboard/users/create">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Create New User
+          </Link>
         </Button>
       </div>
       <Card>
