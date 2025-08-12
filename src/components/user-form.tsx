@@ -134,7 +134,7 @@ export function UserForm({ user, onSubmit, onDelete }: UserFormProps) {
                       <Input 
                         id="unique-code" 
                         name="code"
-                        value={isCreateMode ? code : '****'} 
+                        value={isCreateMode ? code : user?.code ?? '****'} 
                         onChange={(e) => setCode(e.target.value)}
                         placeholder="4-6 digit code"
                         readOnly={!isCreateMode} 

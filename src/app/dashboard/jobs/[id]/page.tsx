@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, MessageSquare, Paperclip, Send, User, AlertTriangle, CheckCircle, Upload, X } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Paperclip, Send, User, AlertTriangle, CheckCircle, Upload, X, ShieldCheck, ShieldX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -96,6 +96,13 @@ const initialUsers = [
     role: 'Admin',
     status: 'Active',
     code: '4243',
+  },
+  {
+    id: 'USR005',
+    name: 'QC Manager',
+    role: 'QC Manager',
+    status: 'Active',
+    code: '9999',
   },
   {
     id: 'USR006',
@@ -227,7 +234,7 @@ const JobDetailPage = () => {
         setSelectedArtisan('');
     };
     
-    const handleRejectJob = () => {
+    const handleRejectArtisanWork = () => {
         if (!job || !rejectionReason) {
              toast({ variant: 'destructive', title: 'Error', description: 'Please provide a reason for rejection.' });
             return;
@@ -240,7 +247,7 @@ const JobDetailPage = () => {
             assignedTo: job.assignedTo, // Keep it assigned to the same artisan
             history: [...job.history, {
                 user: loggedInUser?.name || 'Manager',
-                action: `Job Rejected. Reason: ${rejectionReason}`,
+                action: `Artisan work rejected. Reason: ${rejectionReason}`,
                 timestamp: new Date().toISOString(),
             }],
         };
@@ -292,6 +299,36 @@ const JobDetailPage = () => {
         toast({ title: 'Success', description: 'Job has been sent for Quality Control.' });
     }
 
+    const handleQcAction = (action: 'approve' | 'reject') => {
+        if (!job || !loggedInUser) return;
+
+        if (action === 'reject' && !rejectionReason) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please provide a reason for rejection.' });
+            return;
+        }
+
+        const isApproved = action === 'approve';
+        const updatedJob = {
+            ...job,
+            status: isApproved ? 'Completed' : 'Rejected by QC',
+            stage: isApproved ? 'Completed' as const : 'WIP' as const,
+            history: [...job.history, {
+                user: loggedInUser.name,
+                action: isApproved ? 'Verified & Completed Job' : `QC Rejected. Reason: ${rejectionReason}`,
+                timestamp: new Date().toISOString(),
+            }],
+        };
+        updateJobInStorage(updatedJob);
+        toast({
+            title: isApproved ? 'Job Completed' : 'Job Rejected',
+            description: isApproved ? 'The job has been successfully verified and marked as complete.' : 'The job has been sent back for rework.',
+        });
+         if (action === 'reject') {
+            setRejectionReason('');
+        }
+    };
+
+
     if (!job) {
         return (
              <div className="flex-1 space-y-4 p-4 lg:p-6 flex flex-col items-center justify-center">
@@ -309,6 +346,7 @@ const JobDetailPage = () => {
 
     const isArtisan = loggedInUser?.role.startsWith('Artisan');
     const isManager = loggedInUser?.role.includes('Manager');
+    const isQcManager = loggedInUser?.role === 'QC Manager';
 
     return (
         <div className="flex-1 space-y-4 p-4 lg:p-6">
@@ -516,7 +554,7 @@ const JobDetailPage = () => {
                                     
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="destructive" className="w-full" disabled={job.status === 'Completed' || job.status === 'Pending Approval'}>Reject Artisan's Work</Button>
+                                            <Button variant="destructive" className="w-full" disabled={job.status === 'Completed' || job.status === 'Pending Approval' || !job.status.includes('QC Pending')}>Reject Artisan's Work</Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
@@ -536,7 +574,46 @@ const JobDetailPage = () => {
                                             </div>
                                             <AlertDialogFooter>
                                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={handleRejectJob} disabled={!rejectionReason}>
+                                                <AlertDialogAction onClick={handleRejectArtisanWork} disabled={!rejectionReason}>
+                                                    Confirm Rejection
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </>
+                            )}
+                             { isQcManager && job.status === 'QC Pending' && (
+                                <>
+                                    <Button className="w-full" variant="secondary" onClick={() => handleQcAction('approve')}>
+                                        <ShieldCheck className="mr-2 h-4 w-4" />
+                                        Verify & Complete Job
+                                    </Button>
+                                     <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" className="w-full">
+                                                <ShieldX className="mr-2 h-4 w-4" />
+                                                Reject & Send Back
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you sure you want to reject this work?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This action will send the job back for rework. Please provide a reason for this QC rejection.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="reason">Rejection Reason</Label>
+                                                <Textarea 
+                                                    id="reason" 
+                                                    placeholder="e.g., Polish is uneven, stone setting is loose..." 
+                                                    value={rejectionReason}
+                                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                                />
+                                            </div>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleQcAction('reject')} disabled={!rejectionReason}>
                                                     Confirm Rejection
                                                 </AlertDialogAction>
                                             </AlertDialogFooter>
