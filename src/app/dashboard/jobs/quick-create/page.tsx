@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Camera, RefreshCcw, Check, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
@@ -131,12 +130,12 @@ export default function QuickCreateJobPage() {
         orderType: 'Stock',
         customerOrderNumber: '',
         urgency: 'Low' as 'Low',
-        budget: Number(data.budget) || 0,
+        budget: 0,
         ornamentType: data.ornamentType as string,
-        goldWeight: Number(data.goldWeight) || 0,
-        diamondWeight: Number(data.diamondWeight) || 0,
-        stoneWeight: Number(data.stoneWeight) || 0,
-        description: data.description as string,
+        goldWeight: 0,
+        diamondWeight: 0,
+        stoneWeight: 0,
+        description: '',
         images: capturedImage ? [capturedImage] : [],
         status: 'Pending Approval',
         stage: 'Pending' as 'Pending',
@@ -211,46 +210,15 @@ export default function QuickCreateJobPage() {
         <CardHeader>
           <CardTitle>Job Details</CardTitle>
           <CardDescription>
-            Fill out the key details for this stock order. Urgency is set to Low automatically.
+            Enter the type of ornament. Urgency is set to Low automatically.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-               <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2">
                 <Label htmlFor="ornamentType">Ornament Type</Label>
                 <Input id="ornamentType" name="ornamentType" placeholder="e.g., Ring, Necklace, Bracelet" required />
-              </div>
             </div>
-
-             <div className="space-y-4 rounded-lg border p-4">
-                 <h3 className="font-medium">Material Weights (Grams)</h3>
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                    <div className="space-y-2">
-                        <Label htmlFor="goldWeight">Gold</Label>
-                        <Input id="goldWeight" name="goldWeight" type="number" step="0.01" placeholder="e.g., 10.50" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="diamondWeight">Diamond</Label>
-                        <Input id="diamondWeight" name="diamondWeight" type="number" step="0.01" placeholder="e.g., 1.25" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="stoneWeight">Coloured Stone</Label>
-                        <Input id="stoneWeight" name="stoneWeight" type="number" step="0.01" placeholder="e.g., 5.75" />
-                    </div>
-                </div>
-            </div>
-            
-            <div className="space-y-2">
-                <Label htmlFor="description">Description / Notes</Label>
-                <Textarea id="description" name="description" placeholder="Add any relevant details or instructions for the artisans."/>
-            </div>
-            
-             <div className="space-y-2">
-                <Label htmlFor="budget">Budget (Optional)</Label>
-                <Input id="budget" name="budget" type="number" placeholder="Enter budget amount" />
-              </div>
-
 
             <div className="flex justify-end gap-2">
                  <Button type="button" variant="outline" onClick={() => router.push('/dashboard/jobs')}>
