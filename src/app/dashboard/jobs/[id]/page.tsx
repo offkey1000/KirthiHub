@@ -274,7 +274,7 @@ const JobDetailPage = () => {
         if (!job || !loggedInUser) return;
         
         const isAccepting = action === 'Accepted';
-        const newStatus = isAccepting ? `In Progress (${loggedInUser.name})` : `QC Pending`;
+        const newStatus = isAccepting ? `In Progress (${loggedInUser.name})` : `Ready for Manager Review`;
         const newStage = 'WIP' as const; // Stays in WIP until QC approves
         const actionText = isAccepting ? 'Accepted Job' : `Marked as Complete`;
 
@@ -291,6 +291,24 @@ const JobDetailPage = () => {
 
         updateJobInStorage(updatedJob);
         toast({ title: 'Success', description: `Job status updated: ${newStatus}` });
+    };
+
+    const handleManagerApproveForQc = () => {
+        if (!job || !loggedInUser) return;
+        
+        const updatedJob = {
+            ...job,
+            status: 'QC Pending',
+            stage: 'WIP' as const,
+            history: [...job.history, {
+                user: loggedInUser.name,
+                action: `Approved for QC`,
+                timestamp: new Date().toISOString(),
+            }],
+        };
+
+        updateJobInStorage(updatedJob);
+        toast({ title: 'Success', description: 'Job has been sent for Quality Control.' });
     };
     
     const handleQcAction = (action: 'approve' | 'reject') => {
@@ -329,7 +347,7 @@ const JobDetailPage = () => {
                  <p>Loading job details...</p>
                  <Button onClick={() => router.push('/dashboard/jobs')}>Go Back</Button>
             </div>
-        )
+        );
     }
 
     const urgencyBadge = {
@@ -347,6 +365,7 @@ const JobDetailPage = () => {
     // Define visibility and disabled states for all action buttons
     const showManagerAssign = isManager && (job.status === 'Pending Approval' || !job.assignedTo);
     const showManagerReject = isManager && job.stage === 'WIP' && !!job.assignedTo && job.status !== 'QC Pending';
+    const showManagerApproveForQc = isManager && job.status === 'Ready for Manager Review';
     
     const showArtisanAccept = isJobAssignedToMe && job.status.startsWith('Assigned to');
     const showArtisanWork = isJobAssignedToMe && (job.status.startsWith('In Progress') || job.status.startsWith('Rejected by'));
@@ -559,6 +578,9 @@ const JobDetailPage = () => {
                                     </DialogContent>
                                 </Dialog>
                             )}
+                            { showManagerApproveForQc && (
+                                <Button className="w-full" onClick={handleManagerApproveForQc}>Approve for QC</Button>
+                            )}
                             { showManagerReject && (
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
@@ -609,7 +631,7 @@ const JobDetailPage = () => {
                                                 <AlertDialogTitle>Are you sure you want to reject this work?</AlertDialogTitle>
                                                 <AlertDialogDescription>
                                                     This action will send the job back for rework. Please provide a reason for this QC rejection.
-                                                </AlertDialogDescription>
+                                                </Description>
                                             </AlertDialogHeader>
                                             <div className="space-y-2">
                                                 <Label htmlFor="reason">Rejection Reason</Label>
@@ -630,7 +652,7 @@ const JobDetailPage = () => {
                                     </AlertDialog>
                                 </>
                             )}
-                             { !showManagerAssign && !showManagerReject && !isJobAssignedToMe && !showQcActions && (
+                             { !showManagerAssign && !showManagerReject && !isJobAssignedToMe && !showQcActions && !showManagerApproveForQc && (
                                 <p className="text-sm text-muted-foreground text-center">No actions available for you at this stage.</p>
                              )}
                         </CardContent>
