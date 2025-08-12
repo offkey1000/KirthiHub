@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +22,7 @@ import {
 import { ArrowUpRight, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 
-const users = [
+const initialUsers = [
   {
     id: 'USR001',
     name: 'Admin User',
@@ -64,9 +65,18 @@ const users = [
     role: 'Artisan (Casting)',
     status: 'Active',
   },
+  // This user is added to simulate a new user being created
+  // In a real application, this would be handled by a state management library or a backend
+  {
+    id: 'USR008',
+    name: 'New Filing Artisan',
+    role: 'Artisan (Filing)',
+    status: 'Active',
+  }
 ];
 
 export default function UsersPage() {
+  const [users, setUsers] = useState(initialUsers);
   return (
     <div className="flex-1 space-y-4 p-4 lg:p-6">
       <div className="flex items-center justify-between">
