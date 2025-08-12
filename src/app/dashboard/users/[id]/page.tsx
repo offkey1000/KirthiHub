@@ -14,6 +14,7 @@ const users = [
     name: 'Admin User',
     role: 'Admin',
     status: 'Active',
+    code: '4243',
   },
   {
     id: 'USR002',
@@ -79,7 +80,8 @@ export default function UserDetailPage() {
     
     // Update user in session storage to persist across navigation
     const storedUsers = JSON.parse(sessionStorage.getItem('users') || '[]');
-    const updatedUsers = storedUsers.map((u: User) => 
+    const allUsers = storedUsers.length > 0 ? storedUsers : users;
+    const updatedUsers = allUsers.map((u: User) => 
         u.id === userId ? { ...u, ...data } : u
     );
     sessionStorage.setItem('users', JSON.stringify(updatedUsers));
@@ -97,7 +99,8 @@ export default function UserDetailPage() {
     
     // Remove user from session storage
     const storedUsers = JSON.parse(sessionStorage.getItem('users') || '[]');
-    const updatedUsers = storedUsers.filter((u: User) => u.id !== userId);
+    const allUsers = storedUsers.length > 0 ? storedUsers : users;
+    const updatedUsers = allUsers.filter((u: User) => u.id !== userId);
     sessionStorage.setItem('users', JSON.stringify(updatedUsers));
 
     toast({

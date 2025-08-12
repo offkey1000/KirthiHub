@@ -7,6 +7,52 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
+const initialUsers = [
+  {
+    id: 'USR001',
+    name: 'Admin User',
+    role: 'Admin',
+    status: 'Active',
+    code: '4243',
+  },
+  {
+    id: 'USR002',
+    name: 'Showroom Manager',
+    role: 'Showroom Manager',
+    status: 'Active',
+  },
+  {
+    id: 'USR003',
+    name: 'Manufacturing Manager',
+    role: 'Manufacturing Manager',
+    status: 'Active',
+  },
+  {
+    id: 'USR004',
+    name: 'Showroom Staff',
+    role: 'Showroom Staff',
+    status: 'Active',
+  },
+  {
+    id: 'USR005',
+    name: 'QC Manager',
+    role: 'QC Manager',
+    status: 'Active',
+  },
+  {
+    id: 'USR006',
+    name: 'CAD Artisan',
+    role: 'Artisan (CAD)',
+    status: 'Inactive',
+  },
+    {
+    id: 'USR007',
+    name: 'Casting Artisan',
+    role: 'Artisan (Casting)',
+    status: 'Active',
+  },
+];
+
 export default function CreateUserPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -23,7 +69,8 @@ export default function CreateUserPage() {
 
     // Add user to session storage to persist across navigation
     const storedUsers = JSON.parse(sessionStorage.getItem('users') || '[]');
-    sessionStorage.setItem('users', JSON.stringify([...storedUsers, newUser]));
+    const allUsers = storedUsers.length > 0 ? storedUsers : initialUsers;
+    sessionStorage.setItem('users', JSON.stringify([...allUsers, newUser]));
 
     toast({
       title: 'User Created',

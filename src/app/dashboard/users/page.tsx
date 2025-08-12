@@ -28,6 +28,7 @@ const initialUsers = [
     name: 'Admin User',
     role: 'Admin',
     status: 'Active',
+    code: '4243',
   },
   {
     id: 'USR002',

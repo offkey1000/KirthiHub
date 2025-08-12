@@ -17,6 +17,55 @@ import { Label } from '@/components/ui/label';
 import { Gem, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+const initialUsers = [
+  {
+    id: 'USR001',
+    name: 'Admin User',
+    role: 'Admin',
+    status: 'Active',
+    code: '4243',
+  },
+  {
+    id: 'USR002',
+    name: 'Showroom Manager',
+    role: 'Showroom Manager',
+    status: 'Active',
+  },
+  {
+    id: 'USR003',
+    name: 'Manufacturing Manager',
+    role: 'Manufacturing Manager',
+    status: 'Active',
+  },
+  {
+    id: 'USR004',
+    name: 'Showroom Staff',
+    role: 'Showroom Staff',
+    status: 'Active',
+  },
+  {
+    id: 'USR005',
+    name: 'QC Manager',
+    role: 'QC Manager',
+    status: 'Active',
+  },
+  {
+    id: 'USR006',
+    name: 'CAD Artisan',
+    role: 'Artisan (CAD)',
+    status: 'Inactive',
+  },
+    {
+    id: 'USR007',
+    name: 'Casting Artisan',
+    role: 'Artisan (Casting)',
+    status: 'Active',
+  },
+];
+
+type User = typeof initialUsers[0];
+
+
 export function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -24,14 +73,19 @@ export function LoginPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement actual authentication
-    if (code === '4243') {
+    
+    const storedUsers = JSON.parse(sessionStorage.getItem('users') || '[]');
+    const allUsers: User[] = storedUsers.length > 0 ? storedUsers : initialUsers;
+    
+    const validUser = allUsers.find(user => user.code === code && user.status === 'Active');
+
+    if (validUser) {
       router.push('/dashboard');
     } else {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: 'The unique code you entered is incorrect.',
+        description: 'The unique code you entered is incorrect or the user is inactive.',
       });
     }
   };
