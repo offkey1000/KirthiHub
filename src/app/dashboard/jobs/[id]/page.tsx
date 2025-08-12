@@ -362,9 +362,8 @@ const JobDetailPage = () => {
 
     const isJobAssignedToMe = isArtisan && job.assignedTo === loggedInUser.id;
 
-    // Define visibility and disabled states for all action buttons
     const showManagerAssign = isManager && (job.status === 'Pending Approval' || !job.assignedTo);
-    const showManagerReject = isManager && job.stage === 'WIP' && !!job.assignedTo && job.status !== 'QC Pending';
+    const showManagerReject = isManager && job.stage === 'WIP' && job.status !== 'Pending Approval';
     const showManagerApproveForQc = isManager && job.status === 'Ready for Manager Review';
     
     const showArtisanAccept = isJobAssignedToMe && job.status.startsWith('Assigned to');
@@ -491,10 +490,10 @@ const JobDetailPage = () => {
                         </CardHeader>
                         <CardContent className="space-y-2">
                             {/* Artisan Actions */}
-                            { isJobAssignedToMe && showArtisanAccept && (
+                            { showArtisanAccept && (
                                 <Button className="w-full" onClick={() => handleArtisanAction('Accepted')}>Accept Job</Button>
                             )}
-                            { isJobAssignedToMe && showArtisanWork && (
+                            { showArtisanWork && (
                                 <>
                                     <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
                                         <DialogTrigger asChild>
@@ -652,7 +651,7 @@ const JobDetailPage = () => {
                                     </AlertDialog>
                                 </>
                             )}
-                             { !showManagerAssign && !showManagerReject && !isJobAssignedToMe && !showQcActions && !showManagerApproveForQc && (
+                             { !showManagerAssign && !showManagerReject && !showArtisanAccept && !showArtisanWork && !showQcActions && !showManagerApproveForQc && (
                                 <p className="text-sm text-muted-foreground text-center">No actions available for you at this stage.</p>
                              )}
                         </CardContent>
