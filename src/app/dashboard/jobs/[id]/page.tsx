@@ -235,9 +235,9 @@ const JobDetailPage = () => {
 
         const updatedJob = {
             ...job,
-            status: `Rejected`,
-            stage: 'Pending' as const,
-            assignedTo: null,
+            status: `Rejected by Manager`,
+            stage: 'WIP' as const, // Keep it in WIP for rework
+            assignedTo: job.assignedTo, // Keep it assigned to the same artisan
             history: [...job.history, {
                 user: loggedInUser?.name || 'Manager',
                 action: `Job Rejected. Reason: ${rejectionReason}`,
@@ -250,7 +250,7 @@ const JobDetailPage = () => {
         toast({
             variant: 'destructive',
             title: 'Job Rejected',
-            description: `${job.title} has been rejected and sent back.`,
+            description: `${job.title} has been sent back to the artisan for rework.`,
         });
         setRejectionReason('');
     };
@@ -430,7 +430,7 @@ const JobDetailPage = () => {
                         <CardContent className="space-y-2">
                              { isArtisan && job.assignedTo === loggedInUser?.id && !job.status.includes('Completed') && !job.status.includes('QC') && (
                                 <>
-                                    <Button className="w-full" onClick={() => handleArtisanAction('Accepted')} disabled={job.status.startsWith('In Progress')}>Accept Job</Button>
+                                    <Button className="w-full" onClick={() => handleArtisanAction('Accepted')} disabled={job.status.startsWith('In Progress') || job.status.startsWith('Rejected')}>Accept Job</Button>
                                     <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
                                         <DialogTrigger asChild>
                                             <Button variant="secondary" className="w-full">Upload Finished Work</Button>
@@ -471,7 +471,7 @@ const JobDetailPage = () => {
                                             </DialogFooter>
                                         </DialogContent>
                                     </Dialog>
-                                    <Button className="w-full" onClick={() => handleArtisanAction('Completed')} disabled={!job.status.startsWith('In Progress')}>Mark as Complete</Button>
+                                    <Button className="w-full" onClick={() => handleArtisanAction('Completed')} disabled={!job.status.startsWith('In Progress') && !job.status.startsWith('Rejected')}>Mark as Complete</Button>
                                 </>
                             )}
                             { isManager && (
@@ -512,17 +512,17 @@ const JobDetailPage = () => {
                                         </DialogContent>
                                     </Dialog>
 
-                                    <Button variant="secondary" className="w-full" onClick={handleManagerMarkAsComplete}>Forward to QC</Button>
+                                    <Button variant="secondary" className="w-full" onClick={handleManagerMarkAsComplete} disabled={job.status !== 'QC Pending'}>Forward to QC</Button>
                                     
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="destructive" className="w-full">Reject / Send Back</Button>
+                                            <Button variant="destructive" className="w-full" disabled={job.status === 'Completed' || job.status === 'Pending Approval'}>Reject Artisan's Work</Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
-                                                <AlertDialogTitle>Are you sure you want to reject this job?</AlertDialogTitle>
+                                                <AlertDialogTitle>Are you sure you want to reject this work?</AlertDialogTitle>
                                                 <AlertDialogDescription>
-                                                    This action will send the job back to the previous stage. Please provide a reason for rejection.
+                                                    This action will send the job back to the artisan for rework. Please provide a reason for rejection.
                                                 </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <div className="space-y-2">
@@ -553,5 +553,3 @@ const JobDetailPage = () => {
 };
 
 export default JobDetailPage;
-
-    
