@@ -37,8 +37,15 @@ import { Menu } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type User = {
+    id: string;
     role: string;
 };
+
+type Job = {
+    id: string;
+    stage: 'Pending' | 'WIP' | 'Completed';
+    assignedTo: string | null;
+}
 
 export default function DashboardLayout({
   children,
@@ -49,14 +56,27 @@ export default function DashboardLayout({
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [jobCount, setJobCount] = useState(0);
 
   useEffect(() => {
     const storedUser = sessionStorage.getItem('loggedInUser');
+    const storedJobs = sessionStorage.getItem('jobs');
+    const jobs: Job[] = storedJobs ? JSON.parse(storedJobs) : [];
+    
     if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        const currentUser = JSON.parse(storedUser);
+        setUser(currentUser);
+
+        if (currentUser.role.startsWith('Artisan')) {
+            const assignedJobs = jobs.filter(job => job.assignedTo === currentUser.id);
+            setJobCount(assignedJobs.length);
+        } else {
+            const activeJobs = jobs.filter(job => job.stage !== 'Completed');
+            setJobCount(activeJobs.length);
+        }
     }
     setIsLoading(false);
-  }, []);
+  }, [pathname]); // Re-run on path change to keep count updated
   
   const handleLogout = () => {
     sessionStorage.removeItem('loggedInUser');
@@ -67,13 +87,13 @@ export default function DashboardLayout({
 
   const managerNavLinks = [
     { href: '/dashboard', icon: Home, label: 'Dashboard' },
-    { href: '/dashboard/jobs', icon: LayoutGrid, label: 'Job Pipeline', badge: 7 },
+    { href: '/dashboard/jobs', icon: LayoutGrid, label: 'Job Pipeline', badge: jobCount },
     { href: '/dashboard/users', icon: Users, label: 'Users' },
     { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ];
 
   const artisanNavLinks = [
-    { href: '/dashboard/my-jobs', icon: ListChecks, label: 'My Jobs', badge: 2 },
+    { href: '/dashboard/my-jobs', icon: ListChecks, label: 'My Jobs', badge: jobCount },
     { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ];
 
@@ -130,7 +150,7 @@ export default function DashboardLayout({
                 >
                   <link.icon className="h-4 w-4" />
                   {link.label}
-                  {link.badge && (
+                  {link.badge > 0 && (
                     <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
                       {link.badge}
                     </Badge>
@@ -185,7 +205,7 @@ export default function DashboardLayout({
                   >
                     <link.icon className="h-5 w-5" />
                     {link.label}
-                    {link.badge && (
+                    {link.badge > 0 && (
                       <Badge className="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
                         {link.badge}
                       </Badge>
