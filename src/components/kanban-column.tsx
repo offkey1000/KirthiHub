@@ -2,11 +2,11 @@
 'use client';
 
 import React from 'react';
-import { SortableContext, useSortable } from '@dnd-kit/sortable';
+import { SortableContext } from '@dnd-kit/sortable';
 import { useDndContext } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import { KanbanCard } from './kanban-card';
 import { cn } from '@/lib/utils';
+import { useDroppable } from '@dnd-kit/core';
 
 type Job = {
   id: string;
@@ -29,7 +29,7 @@ export function KanbanColumn({
   column: Column;
   jobs: Job[];
 }) {
-  const { setNodeRef, isOver, transform, transition } = useSortable({
+  const { setNodeRef, isOver } = useDroppable({
     id: column.id,
     data: {
       type: 'Column',
@@ -37,15 +37,9 @@ export function KanbanColumn({
     },
   });
 
-  const style = {
-    transition,
-    transform: CSS.Transform.toString(transform),
-  };
-  
   return (
     <div
       ref={setNodeRef}
-      style={style}
       className={cn(
         'flex flex-col h-full',
       )}
