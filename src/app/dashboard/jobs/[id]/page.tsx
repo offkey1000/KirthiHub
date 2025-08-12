@@ -302,7 +302,6 @@ const JobDetailPage = () => {
         const updatedJob = {
             ...job,
             status: 'QC Pending',
-            stage: 'WIP' as const, // It's a special status within WIP
             history: [...job.history, {
                 user: loggedInUser.name,
                 action: `Marked as Ready for QC`,
@@ -327,7 +326,7 @@ const JobDetailPage = () => {
             ...job,
             status: isApproved ? 'Completed' : 'Rejected by QC',
             stage: isApproved ? 'Completed' as const : 'WIP' as const,
-            assignedTo: isApproved ? job.assignedTo : null, // Un-assign on QC reject
+            assignedTo: isApproved ? null : null, 
             history: [...job.history, {
                 user: loggedInUser.name,
                 action: isApproved ? 'Verified & Completed Job' : `QC Rejected. Reason: ${rejectionReason}`,
@@ -366,17 +365,15 @@ const JobDetailPage = () => {
 
     const isJobAssignedToMe = isArtisan && job.assignedTo === loggedInUser.id;
 
-    // Manager Actions Visibility
+    // Actions Visibility
     const showManagerInitialAssign = isManager && job.stage === 'Pending';
-    const showManagerReassign = isManager && job.stage === 'WIP' && !job.assignedTo && job.status !== 'QC Pending' && !job.status.startsWith('Rejected by QC');
-    const showManagerReadyForQc = isManager && job.stage === 'WIP' && job.status !== 'QC Pending';
+    const showManagerReassign = isManager && job.stage === 'WIP' && !job.assignedTo && job.status !== 'QC Pending';
     const showManagerReject = isManager && job.stage === 'WIP' && !!job.assignedTo;
-
-    // Artisan Actions Visibility
+    const showManagerReadyForQc = isManager && job.stage === 'WIP';
+    
     const showArtisanAccept = isJobAssignedToMe && job.status.startsWith('Assigned to');
     const showArtisanWork = isJobAssignedToMe && (job.status.startsWith('In Progress') || job.status.startsWith('Rejected by'));
     
-    // QC Manager Actions Visibility
     const showQcActions = isQcManager && job.status === 'QC Pending';
 
     return (
@@ -585,8 +582,8 @@ const JobDetailPage = () => {
                                     </DialogContent>
                                 </Dialog>
                             )}
-                            { showManagerReadyForQc && (
-                                <Button className="w-full" onClick={handleManagerReadyForQc}>Ready for QC</Button>
+                            { showManagerReadyForQc && !showManagerInitialAssign && !showManagerReassign &&(
+                                <Button className="w-full" variant="secondary" onClick={handleManagerReadyForQc}>Ready for QC</Button>
                             )}
                             { showManagerReject && (
                                 <AlertDialog>
@@ -622,7 +619,7 @@ const JobDetailPage = () => {
                             {/* QC Manager Actions */}
                              { showQcActions && (
                                 <>
-                                    <Button className="w-full" variant="secondary" onClick={() => handleQcAction('approve')}>
+                                    <Button className="w-full" onClick={() => handleQcAction('approve')}>
                                         <ShieldCheck className="mr-2 h-4 w-4" />
                                         Verify & Complete Job
                                     </Button>
