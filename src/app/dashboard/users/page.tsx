@@ -30,42 +30,6 @@ const initialUsers = [
     status: 'Active',
     code: '4243',
   },
-  {
-    id: 'USR002',
-    name: 'Showroom Manager',
-    role: 'Showroom Manager',
-    status: 'Active',
-  },
-  {
-    id: 'USR003',
-    name: 'Manufacturing Manager',
-    role: 'Manufacturing Manager',
-    status: 'Active',
-  },
-  {
-    id: 'USR004',
-    name: 'Showroom Staff',
-    role: 'Showroom Staff',
-    status: 'Active',
-  },
-  {
-    id: 'USR005',
-    name: 'QC Manager',
-    role: 'QC Manager',
-    status: 'Active',
-  },
-  {
-    id: 'USR006',
-    name: 'CAD Artisan',
-    role: 'Artisan (CAD)',
-    status: 'Inactive',
-  },
-    {
-    id: 'USR007',
-    name: 'Casting Artisan',
-    role: 'Artisan (Casting)',
-    status: 'Active',
-  },
 ];
 
 type User = typeof initialUsers[0];

@@ -17,45 +17,26 @@ import { ArrowUpRight, ListChecks } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 
-const initialJobs = [
-  {
-    id: 'ORD003',
-    title: 'Wedding Band Set',
-    orderType: 'Customer',
-    customerOrderNumber: 'CUST-00125',
-    urgency: 'High',
-    budget: 7000,
-    ornamentType: 'Ring Set',
-    goldWeight: 15.0,
-    diamondWeight: 2.0,
-    stoneWeight: 0,
-    description: 'Matching wedding bands in platinum. His and hers. Both with inset diamonds.',
-    images: [],
-    status: 'In Setting',
-    stage: 'WIP',
-    history: [],
-    assignedTo: 'USR007' // Assigned to Casting Artisan
-  },
-   {
-    id: 'STK001',
-    title: 'Stock Gold Chain',
-    orderType: 'Stock',
-    urgency: 'Medium',
-    budget: 1500,
-    ornamentType: 'Chain',
-    goldWeight: 20.0,
-    diamondWeight: 0,
-    stoneWeight: 0,
-    description: '22k yellow gold, 24-inch rope chain for stock.',
-    images: [],
-    status: 'Assigned to Casting Artisan',
-    stage: 'WIP',
-    history: [],
-    assignedTo: 'USR007'
-  },
-];
+const initialJobs: any[] = [];
 
-type Job = typeof initialJobs[0];
+type Job = {
+    id: string;
+    title: string;
+    orderType: string;
+    customerOrderNumber?: string;
+    urgency: 'High' | 'Medium' | 'Low';
+    budget: number;
+    ornamentType: string;
+    goldWeight: number;
+    diamondWeight: number;
+    stoneWeight: number;
+    description: string;
+    images: string[];
+    status: string;
+    stage: 'Pending' | 'WIP' | 'Completed';
+    history: { user: string; action: string; timestamp: string }[];
+    assignedTo: string | null;
+};
 type User = {
     id: string;
     role: string;

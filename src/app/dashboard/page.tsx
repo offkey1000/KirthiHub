@@ -22,165 +22,27 @@ import { ArrowUpRight, PlusCircle, CircleCheck, Clock, Cog } from 'lucide-react'
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 
-const initialJobs = [
-    {
-    id: 'ORD001',
-    title: 'Customer Diamond Ring',
-    orderType: 'Customer',
-    customerOrderNumber: 'CUST-00123',
-    urgency: 'High',
-    budget: 5000,
-    ornamentType: 'Ring',
-    goldWeight: 8.5,
-    diamondWeight: 1.2,
-    stoneWeight: 0,
-    description: '18k white gold ring with a 1.2-carat central diamond and pave setting on the band. Customer wants a classic, elegant design.',
-    images: ['/placeholder-1.png', '/placeholder-2.png'],
-    status: 'Pending Approval',
-    stage: 'Pending',
-    assignedTo: null,
-    history: [
-        { user: 'Showroom Staff', action: 'Created Job', timestamp: '2023-10-26T10:00:00Z' }
-    ]
-  },
-  {
-    id: 'STK001',
-    title: 'Stock Gold Chain',
-    orderType: 'Stock',
-    urgency: 'Medium',
-    budget: 1500,
-    ornamentType: 'Chain',
-    goldWeight: 20.0,
-    diamondWeight: 0,
-    stoneWeight: 0,
-    description: '22k yellow gold, 24-inch rope chain for stock.',
-    images: [],
-    status: 'In Casting',
-    stage: 'WIP',
-    assignedTo: null,
-    history: [
-        { user: 'Admin', action: 'Created Job', timestamp: '2023-10-25T14:30:00Z' },
-        { user: 'Manufacturing Manager', action: 'Approved Job', timestamp: '2023-10-25T15:00:00Z' },
-        { user: 'Artisan (Casting)', action: 'Accepted Job', timestamp: '2023-10-25T16:00:00Z' }
-    ]
-  },
-  {
-    id: 'ORD002',
-    title: 'Custom Necklace',
-    orderType: 'Customer',
-    customerOrderNumber: 'CUST-00124',
-    urgency: 'Low',
-    budget: 3200,
-    ornamentType: 'Necklace',
-    goldWeight: 12.0,
-    diamondWeight: 0.5,
-    stoneWeight: 2.5,
-    description: 'Custom pendant necklace with a pear-shaped sapphire and small diamonds.',
-    images: ['/placeholder-3.png'],
-    status: 'In Filing',
-    stage: 'WIP',
-    assignedTo: null,
-    history: [
-        { user: 'Showroom Staff', action: 'Created Job', timestamp: '2023-10-24T11:00:00Z' },
-        { user: 'Manufacturing Manager', action: 'Approved Job', timestamp: '2023-10-24T12:00:00Z' },
-         { user: 'Artisan (Casting)', action: 'Marked as complete', timestamp: '2023-10-25T09:00:00Z' },
-        { user: 'Artisan (Filing)', action: 'Accepted Job', timestamp: '2023-10-25T10:00:00Z' }
-    ]
-  },
-  {
-    id: 'ORD003',
-    title: 'Wedding Band Set',
-    orderType: 'Customer',
-    customerOrderNumber: 'CUST-00125',
-    urgency: 'High',
-    budget: 7000,
-    ornamentType: 'Ring Set',
-    goldWeight: 15.0,
-    diamondWeight: 2.0,
-    stoneWeight: 0,
-    description: 'Matching wedding bands in platinum. His and hers. Both with inset diamonds.',
-    images: [],
-    status: 'In Setting',
-    stage: 'WIP',
-    assignedTo: 'USR007',
-     history: [
-        { user: 'Showroom Manager', action: 'Created Job', timestamp: '2023-10-23T16:00:00Z' },
-        { user: 'Manufacturing Manager', action: 'Approved Job', timestamp: '2023-10-23T17:00:00Z' },
-        { user: 'Artisan (Casting)', action: 'Marked as complete', timestamp: '2023-10-24T14:00:00Z' },
-        { user: 'Artisan (Filing)', action: 'Marked as complete', timestamp: '2023-10-25T11:00:00Z' },
-        { user: 'Artisan (Setting)', action: 'Accepted Job', timestamp: '2023-10-25T12:00:00Z' }
-    ]
-  },
-  {
-    id: 'STK002',
-    title: 'Stock Pearl Earrings',
-    orderType: 'Stock',
-    urgency: 'Medium',
-    budget: 800,
-    ornamentType: 'Earrings',
-    goldWeight: 4.0,
-    diamondWeight: 0,
-    stoneWeight: 1.5,
-    description: 'Simple 14k gold stud earrings with freshwater pearls.',
-    images: [],
-    status: 'In Polishing',
-    stage: 'WIP',
-    assignedTo: null,
-     history: [
-        { user: 'Manufacturing Manager', action: 'Created Job', timestamp: '2023-10-22T10:00:00Z' },
-        { user: 'Manufacturing Manager', action: 'Approved Job', timestamp: '2023-10-22T11:00:00Z' },
-        { user: 'Artisan (Setting)', action: 'Marked as complete', timestamp: '2023-10-24T18:00:00Z' },
-        { user: 'Artisan (Polishing)', action: 'Accepted Job', timestamp: '2023-10-25T08:00:00Z' }
-    ]
-  },
-  {
-    id: 'ORD004',
-    title: 'Engraved Bracelet',
-    orderType: 'Customer',
-    customerOrderNumber: 'CUST-00126',
-    urgency: 'Low',
-    budget: 1200,
-    ornamentType: 'Bracelet',
-    goldWeight: 10.0,
-    diamondWeight: 0,
-    stoneWeight: 0,
-    description: 'Silver bracelet to be engraved with "Amor Fati".',
-    images: ['/placeholder-4.png'],
-    status: 'QC Pending',
-    stage: 'WIP',
-    assignedTo: null,
-     history: [
-        { user: 'Showroom Staff', action: 'Created Job', timestamp: '2023-10-21T13:00:00Z' },
-        { user: 'Manufacturing Manager', action: 'Approved Job', timestamp: '2023-10-21T14:00:00Z' },
-        { user: 'Artisan (Polishing)', action: 'Marked as complete', timestamp: '2023-10-24T17:00:00Z' },
-        { user: 'Manufacturing Manager', action: 'Sent to QC', timestamp: '2023-10-25T14:00:00Z' }
-    ]
-  },
-  {
-    id: 'STK003',
-    title: 'Stock Ruby Pendant',
-    orderType: 'Stock',
-    urgency: 'Medium',
-    budget: 2500,
-    ornamentType: 'Pendant',
-    goldWeight: 5.0,
-    diamondWeight: 0.2,
-    stoneWeight: 3.0,
-    description: '18k gold pendant with a central oval ruby, surrounded by a halo of small diamonds.',
-    images: [],
-    status: 'Completed',
-    stage: 'Completed',
-    assignedTo: null,
-    history: [
-        { user: 'Manufacturing Manager', action: 'Created Job', timestamp: '2023-10-20T10:00:00Z' },
-        { user: 'Manufacturing Manager', action: 'Approved Job', timestamp: '2023-10-20T11:00:00Z' },
-        { user: 'QC Manager', action: 'Verified & Completed', timestamp: '2023-10-25T16:00:00Z' }
-    ]
-  },
-];
+const initialJobs: any[] = [];
 
 
-type Job = typeof initialJobs[0];
+type Job = {
+  id: string;
+  title: string;
+  orderType: string;
+  customerOrderNumber?: string;
+  urgency: 'High' | 'Medium' | 'Low';
+  budget: number;
+  ornamentType: string;
+  goldWeight: number;
+  diamondWeight: number;
+  stoneWeight: number;
+  description: string;
+  images: string[];
+  status: string;
+  stage: 'Pending' | 'WIP' | 'Completed';
+  history: { user: string; action: string; timestamp: string }[];
+  assignedTo?: string | null;
+};
 
 export default function Dashboard() {
   const [jobs, setJobs] = useState<Job[]>([]);

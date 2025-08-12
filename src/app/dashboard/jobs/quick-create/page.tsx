@@ -20,27 +20,7 @@ import Image from 'next/image';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const initialJobs = [
-    {
-    id: 'ORD001',
-    title: 'Customer Diamond Ring',
-    orderType: 'Customer',
-    customerOrderNumber: 'CUST-00123',
-    urgency: 'High',
-    budget: 5000,
-    ornamentType: 'Ring',
-    goldWeight: 8.5,
-    diamondWeight: 1.2,
-    stoneWeight: 0,
-    description: '18k white gold ring with a 1.2-carat central diamond and pave setting on the band. Customer wants a classic, elegant design.',
-    images: ['/placeholder-1.png', '/placeholder-2.png'],
-    status: 'Pending Approval',
-    stage: 'Pending',
-    history: [
-        { user: 'Showroom Staff', action: 'Created Job', timestamp: '2023-10-26T10:00:00Z' }
-    ]
-  },
-];
+const initialJobs: any[] = [];
 
 
 export default function QuickCreateJobPage() {

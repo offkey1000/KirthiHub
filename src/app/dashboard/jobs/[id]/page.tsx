@@ -42,52 +42,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
-const initialJobs = [
-    {
-    id: 'ORD001',
-    title: 'Customer Diamond Ring',
-    orderType: 'Customer',
-    customerOrderNumber: 'CUST-00123',
-    urgency: 'High',
-    budget: 5000,
-    ornamentType: 'Ring',
-    goldWeight: 8.5,
-    diamondWeight: 1.2,
-    stoneWeight: 0,
-    description: '18k white gold ring with a 1.2-carat central diamond and pave setting on the band. Customer wants a classic, elegant design.',
-    images: ['/placeholder-1.png', '/placeholder-2.png'],
-    status: 'Pending Approval',
-    stage: 'Pending',
-    history: [
-        { user: 'Showroom Staff', action: 'Created Job', timestamp: '2023-10-26T10:00:00Z' }
-    ],
-    assignedTo: null,
-  },
-   {
-    id: 'ORD003',
-    title: 'Wedding Band Set',
-    orderType: 'Customer',
-    customerOrderNumber: 'CUST-00125',
-    urgency: 'High',
-    budget: 7000,
-    ornamentType: 'Ring Set',
-    goldWeight: 15.0,
-    diamondWeight: 2.0,
-    stoneWeight: 0,
-    description: 'Matching wedding bands in platinum. His and hers. Both with inset diamonds.',
-    images: [],
-    status: 'In Setting',
-    stage: 'WIP',
-     history: [
-        { user: 'Showroom Manager', action: 'Created Job', timestamp: '2023-10-23T16:00:00Z' },
-        { user: 'Manufacturing Manager', action: 'Approved Job', timestamp: '2023-10-23T17:00:00Z' },
-        { user: 'Artisan (Casting)', action: 'Marked as complete', timestamp: '2023-10-24T14:00:00Z' },
-        { user: 'Artisan (Filing)', action: 'Marked as complete', timestamp: '2023-10-25T11:00:00Z' },
-        { user: 'Artisan (Setting)', action: 'Accepted Job', timestamp: '2023-10-25T12:00:00Z' }
-    ],
-    assignedTo: 'USR007'
-  },
-];
+const initialJobs: any[] = [];
 
 const initialUsers = [
   {
@@ -97,37 +52,27 @@ const initialUsers = [
     status: 'Active',
     code: '4243',
   },
-  {
-    id: 'USR003',
-    name: 'Manufacturing Manager',
-    role: 'Manufacturing Manager',
-    status: 'Active',
-    code: '1234',
-  },
-  {
-    id: 'USR005',
-    name: 'QC Manager',
-    role: 'QC Manager',
-    status: 'Active',
-    code: '9999',
-  },
-  {
-    id: 'USR006',
-    name: 'CAD Artisan',
-    role: 'Artisan (CAD)',
-    status: 'Inactive',
-  },
-  {
-    id: 'USR007',
-    name: 'Casting Artisan',
-    role: 'Artisan (Casting)',
-    status: 'Active',
-    code: '5678'
-  },
 ];
 
 
-type Job = typeof initialJobs[0];
+type Job = {
+    id: string;
+    title: string;
+    orderType: string;
+    customerOrderNumber?: string;
+    urgency: 'High' | 'Medium' | 'Low';
+    budget: number;
+    ornamentType: string;
+    goldWeight: number;
+    diamondWeight: number;
+    stoneWeight: number;
+    description: string;
+    images: string[];
+    status: string;
+    stage: 'Pending' | 'WIP' | 'Completed';
+    history: { user: string; action: string; timestamp: string }[];
+    assignedTo: string | null;
+};
 type User = typeof initialUsers[0] & { role: string };
 
 const JobDetailPage = () => {
