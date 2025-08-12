@@ -35,6 +35,7 @@ import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getAllJobs } from '@/lib/job-storage';
 
 type User = {
     id: string;
@@ -59,9 +60,8 @@ export default function DashboardLayout({
   const [jobCount, setJobCount] = useState(0);
 
   useEffect(() => {
-    const storedUser = sessionStorage.getItem('loggedInUser');
-    const storedJobs = sessionStorage.getItem('jobs');
-    const jobs: Job[] = storedJobs ? JSON.parse(storedJobs) : [];
+    const storedUser = localStorage.getItem('loggedInUser');
+    const jobs: Job[] = getAllJobs();
     
     if (storedUser) {
         const currentUser = JSON.parse(storedUser);
@@ -74,12 +74,14 @@ export default function DashboardLayout({
             const activeJobs = jobs.filter(job => job.stage !== 'Completed');
             setJobCount(activeJobs.length);
         }
+    } else {
+        router.push('/');
     }
     setIsLoading(false);
-  }, [pathname]); // Re-run on path change to keep count updated
+  }, [pathname, router]); 
   
   const handleLogout = () => {
-    sessionStorage.removeItem('loggedInUser');
+    localStorage.removeItem('loggedInUser');
     router.push('/');
   }
 
@@ -99,7 +101,7 @@ export default function DashboardLayout({
 
   const navLinks = isArtisan ? artisanNavLinks : managerNavLinks;
 
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
         <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
             <div className="hidden border-r bg-muted/40 md:block p-4 space-y-4">

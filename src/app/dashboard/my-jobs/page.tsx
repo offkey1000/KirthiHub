@@ -2,7 +2,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -16,8 +15,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowUpRight, ListChecks } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-
-const initialJobs: any[] = [];
+import { getAllJobs } from '@/lib/job-storage';
 
 type Job = {
     id: string;
@@ -47,13 +45,12 @@ export default function MyJobsPage() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const storedUser = sessionStorage.getItem('loggedInUser');
+    const storedUser = localStorage.getItem('loggedInUser');
     if (storedUser) {
         const currentUser = JSON.parse(storedUser);
         setUser(currentUser);
         
-        const storedJobs = sessionStorage.getItem('jobs');
-        const allJobs = storedJobs ? JSON.parse(storedJobs) : initialJobs;
+        const allJobs = getAllJobs();
 
         // Filter jobs assigned to the current artisan
         const assignedJobs = allJobs.filter((job: Job) => job.assignedTo === currentUser.id);

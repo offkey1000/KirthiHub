@@ -21,9 +21,7 @@ import {
 import { ArrowUpRight, PlusCircle, CircleCheck, Clock, Cog } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
-
-const initialJobs: any[] = [];
-
+import { getAllJobs } from '@/lib/job-storage';
 
 type Job = {
   id: string;
@@ -48,13 +46,7 @@ export default function Dashboard() {
   const [jobs, setJobs] = useState<Job[]>([]);
 
   useEffect(() => {
-    const storedJobs = sessionStorage.getItem('jobs');
-    if (storedJobs) {
-      setJobs(JSON.parse(storedJobs));
-    } else {
-      setJobs(initialJobs);
-      sessionStorage.setItem('jobs', JSON.stringify(initialJobs));
-    }
+    setJobs(getAllJobs());
   }, []);
 
   const summaryStats = [

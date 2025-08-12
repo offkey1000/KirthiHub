@@ -19,8 +19,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-const initialJobs: any[] = [];
+import { addJob, getAllJobs } from '@/lib/job-storage';
 
 
 export default function QuickCreateJobPage() {
@@ -118,8 +117,7 @@ export default function QuickCreateJobPage() {
         return;
     }
 
-    const storedJobs = JSON.parse(sessionStorage.getItem('jobs') || '[]');
-    const allJobs = storedJobs.length > 0 ? storedJobs : initialJobs;
+    const allJobs = getAllJobs();
 
     const stockOrdersCount = allJobs.filter((job: { orderType: string; }) => job.orderType === 'Stock').length;
     if (stockOrdersCount >= 50) {
@@ -153,7 +151,7 @@ export default function QuickCreateJobPage() {
         ]
     };
 
-    sessionStorage.setItem('jobs', JSON.stringify([...allJobs, newJob]));
+    addJob(newJob);
 
 
     await new Promise(resolve => setTimeout(resolve, 500));

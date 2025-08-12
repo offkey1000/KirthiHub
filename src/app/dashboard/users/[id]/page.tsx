@@ -7,65 +7,50 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
+import { getUserById, updateUser, deleteUserById } from '@/lib/user-storage';
 
-const initialUsers = [
-  {
-    id: 'USR001',
-    name: 'Admin User',
-    role: 'Admin',
-    status: 'Active',
-    code: '4243',
-  },
-];
-
-type User = typeof initialUsers[0];
+type User = {
+  id: string;
+  name: string;
+  role: string;
+  status: string;
+  code: string;
+};
 
 export default function UserDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
-  const userId = params.id;
+  const userId = params.id as string;
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // In a real app, this would be a fetch call.
-    // For now, we simulate fetching from our mock data.
-    // We also check session storage for any updates from the user list page.
-    const storedUsers = JSON.parse(sessionStorage.getItem('users') || 'null');
-    const allUsers = storedUsers || initialUsers;
-    const foundUser = allUsers.find((u: User) => u.id === userId) || null;
-    setUser(foundUser);
+    if (userId) {
+      const foundUser = getUserById(userId);
+      setUser(foundUser as User | null);
+    }
   }, [userId]);
 
 
   const handleUpdateUser = async (data: any) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Update user in session storage to persist across navigation
-    const storedUsers = JSON.parse(sessionStorage.getItem('users') || 'null');
-    const allUsers = storedUsers || initialUsers;
-    const updatedUsers = allUsers.map((u: User) => 
-        u.id === userId ? { ...u, ...data } : u
-    );
-    sessionStorage.setItem('users', JSON.stringify(updatedUsers));
+    if (user) {
+        const updatedUserData = { ...user, ...data };
+        updateUser(updatedUserData);
 
-    toast({
-      title: 'User Updated',
-      description: `Details for ${data.name} have been updated.`,
-    });
-    router.push('/dashboard/users');
+        toast({
+            title: 'User Updated',
+            description: `Details for ${data.name} have been updated.`,
+        });
+        router.push('/dashboard/users');
+    }
   };
 
   const handleDeleteUser = async () => {
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Remove user from session storage
-    const storedUsers = JSON.parse(sessionStorage.getItem('users') || 'null');
-    const allUsers = storedUsers || initialUsers;
-    const updatedUsers = allUsers.filter((u: User) => u.id !== userId);
-    sessionStorage.setItem('users', JSON.stringify(updatedUsers));
+    deleteUserById(userId);
 
     toast({
       variant: 'destructive',

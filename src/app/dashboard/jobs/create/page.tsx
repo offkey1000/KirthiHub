@@ -25,8 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-
-const initialJobs: any[] = [];
+import { addJob, getAllJobs } from '@/lib/job-storage';
 
 
 export default function CreateJobPage() {
@@ -65,8 +64,7 @@ export default function CreateJobPage() {
     const formData = new FormData(event.currentTarget);
     const data = Object.fromEntries(formData.entries());
 
-    const storedJobs = JSON.parse(sessionStorage.getItem('jobs') || '[]');
-    const allJobs = storedJobs.length > 0 ? storedJobs : initialJobs;
+    const allJobs = getAllJobs();
 
     if (data.orderType === 'Stock') {
         const stockOrdersCount = allJobs.filter((job: { orderType: string; }) => job.orderType === 'Stock').length;
@@ -102,8 +100,7 @@ export default function CreateJobPage() {
         ]
     };
 
-    sessionStorage.setItem('jobs', JSON.stringify([...allJobs, newJob]));
-
+    addJob(newJob);
 
     await new Promise(resolve => setTimeout(resolve, 500));
 

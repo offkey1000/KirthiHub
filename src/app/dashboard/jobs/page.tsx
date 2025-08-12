@@ -7,6 +7,7 @@ import { PlusCircle, Camera } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getAllJobs } from '@/lib/job-storage';
 
 const KanbanBoard = dynamic(
   () => import('@/components/kanban-board').then((mod) => mod.KanbanBoard),
@@ -31,9 +32,6 @@ const KanbanBoard = dynamic(
   }
 );
 
-
-const initialJobs: any[] = [];
-
 type Job = {
   id: string;
   title: string;
@@ -57,16 +55,7 @@ export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
 
   useEffect(() => {
-    // On component mount, check if there's job data in session storage.
-    // This allows us to persist the job list state across navigation.
-    const storedJobs = sessionStorage.getItem('jobs');
-    if (storedJobs) {
-      setJobs(JSON.parse(storedJobs));
-    } else {
-      // If no data in storage, initialize with mock data and save it.
-      setJobs(initialJobs);
-      sessionStorage.setItem('jobs', JSON.stringify(initialJobs));
-    }
+    setJobs(getAllJobs());
   }, []);
 
 

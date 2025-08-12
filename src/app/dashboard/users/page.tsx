@@ -21,32 +21,21 @@ import {
 } from '@/components/ui/table';
 import { ArrowUpRight, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
+import { getAllUsers } from '@/lib/user-storage';
 
-const initialUsers = [
-  {
-    id: 'USR001',
-    name: 'Admin User',
-    role: 'Admin',
-    status: 'Active',
-    code: '4243',
-  },
-];
-
-type User = typeof initialUsers[0];
+type User = {
+    id: string;
+    name: string;
+    role: string;
+    status: string;
+    code: string;
+};
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
-    // On component mount, check if there's user data in session storage.
-    const storedUsers = sessionStorage.getItem('users');
-    if (storedUsers) {
-      setUsers(JSON.parse(storedUsers));
-    } else {
-      // If no data in storage, initialize with mock data and save it.
-      setUsers(initialUsers);
-      sessionStorage.setItem('users', JSON.stringify(initialUsers));
-    }
+    setUsers(getAllUsers());
   }, []);
 
   return (

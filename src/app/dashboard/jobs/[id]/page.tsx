@@ -41,20 +41,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-
-const initialJobs: any[] = [];
-
-const initialUsers = [
-  {
-    id: 'USR001',
-    name: 'Admin User',
-    role: 'Admin',
-    status: 'Active',
-    code: '4243',
-  },
-];
+import { getJobById, updateJob } from '@/lib/job-storage';
+import { getAllUsers } from '@/lib/user-storage';
 
 
+type StoredUser = {
+    id: string;
+    name: string;
+    role: string;
+    status: string;
+    code: string;
+};
 type Job = {
     id: string;
     title: string;
@@ -73,7 +70,7 @@ type Job = {
     history: { user: string; action: string; timestamp: string }[];
     assignedTo: string | null;
 };
-type User = typeof initialUsers[0] & { role: string };
+type User = StoredUser & { role: string };
 
 const JobDetailPage = () => {
     const router = useRouter();
@@ -95,17 +92,14 @@ const JobDetailPage = () => {
     const [files, setFiles] = useState<File[]>([]);
     
     useEffect(() => {
-        const storedJobs = JSON.parse(sessionStorage.getItem('jobs') || '[]');
-        const allJobs = storedJobs.length > 0 ? storedJobs : initialJobs;
-        const foundJob = allJobs.find((j: Job) => j.id === jobId) || null;
+        const foundJob = getJobById(jobId);
         setJob(foundJob);
 
-        const storedUsers = JSON.parse(sessionStorage.getItem('users') || 'null');
-        const allUsers = storedUsers || initialUsers;
+        const allUsers = getAllUsers();
         const artisanUsers = allUsers.filter((u: User) => u.role.startsWith('Artisan') && u.status === 'Active');
         setArtisans(artisanUsers);
 
-        const storedUser = sessionStorage.getItem('loggedInUser');
+        const storedUser = localStorage.getItem('loggedInUser');
         if (storedUser) {
             setLoggedInUser(JSON.parse(storedUser));
         }
@@ -113,10 +107,7 @@ const JobDetailPage = () => {
     }, [jobId]);
 
     const updateJobInStorage = (updatedJob: Job) => {
-        const storedJobs = JSON.parse(sessionStorage.getItem('jobs') || '[]');
-        const allJobs = storedJobs.length > 0 ? storedJobs : initialJobs;
-        const updatedJobs = allJobs.map((j: Job) => (j.id === updatedJob.id ? updatedJob : j));
-        sessionStorage.setItem('jobs', JSON.stringify(updatedJobs));
+        updateJob(updatedJob);
         setJob(updatedJob);
     };
 
@@ -195,8 +186,7 @@ const JobDetailPage = () => {
             return;
         }
         
-        const storedUsers = JSON.parse(sessionStorage.getItem('users') || 'null');
-        const allUsers = storedUsers || initialUsers;
+        const allUsers = getAllUsers();
         const assignedArtisan = allUsers.find((a: User) => a.id === job.assignedTo);
         if(!assignedArtisan) return;
 
@@ -225,8 +215,7 @@ const JobDetailPage = () => {
      const handleApproveArtisanWork = () => {
         if (!job || !job.assignedTo) return;
         
-        const storedUsers = JSON.parse(sessionStorage.getItem('users') || 'null');
-        const allUsers = storedUsers || initialUsers;
+        const allUsers = getAllUsers();
         const assignedArtisan = allUsers.find((a: User) => a.id === job.assignedTo);
         if (!assignedArtisan) return;
         const artisanRole = assignedArtisan.role.replace('Artisan (', '').replace(')', '');

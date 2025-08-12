@@ -16,19 +16,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Gem, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { getAllUsers } from '@/lib/user-storage';
 
 
-const initialUsers = [
-  {
-    id: 'USR001',
-    name: 'Admin User',
-    role: 'Admin',
-    status: 'Active',
-    code: '4243',
-  },
-];
-
-type User = typeof initialUsers[0];
+type User = {
+    id: string;
+    name: string;
+    role: string;
+    status: string;
+    code: string;
+};
 
 
 export function LoginPage() {
@@ -41,19 +38,13 @@ export function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     
-    const storedUsers = JSON.parse(sessionStorage.getItem('users') || 'null');
-    const allUsers: User[] = storedUsers || initialUsers;
-
-    // If session storage was empty, set it with initial users
-    if (!storedUsers) {
-        sessionStorage.setItem('users', JSON.stringify(allUsers));
-    }
+    const allUsers: User[] = getAllUsers();
     
     const validUser = allUsers.find(user => user.code === code && user.status === 'Active');
 
     setTimeout(() => {
         if (validUser) {
-          sessionStorage.setItem('loggedInUser', JSON.stringify(validUser));
+          localStorage.setItem('loggedInUser', JSON.stringify(validUser));
           router.push('/dashboard');
         } else {
           toast({

@@ -6,16 +6,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-
-const initialUsers = [
-  {
-    id: 'USR001',
-    name: 'Admin User',
-    role: 'Admin',
-    status: 'Active',
-    code: '4243',
-  },
-];
+import { addUser } from '@/lib/user-storage';
 
 export default function CreateUserPage() {
   const router = useRouter();
@@ -23,18 +14,14 @@ export default function CreateUserPage() {
 
   const handleCreateUser = async (data: any) => {
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 500));
     
-    // In a real app, you'd get the ID from the backend. Here we generate one.
     const newUser = {
         ...data,
         id: `USR${Math.floor(Math.random() * 900) + 100}`
     };
 
-    // Add user to session storage to persist across navigation
-    const storedUsers = JSON.parse(sessionStorage.getItem('users') || 'null');
-    const allUsers = storedUsers || initialUsers;
-    sessionStorage.setItem('users', JSON.stringify([...allUsers, newUser]));
+    addUser(newUser);
 
     toast({
       title: 'User Created',
