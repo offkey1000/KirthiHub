@@ -663,5 +663,3 @@ const JobDetailPage = () => {
 };
 
 export default JobDetailPage;
-
-    
