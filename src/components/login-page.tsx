@@ -34,25 +34,30 @@ export function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [code, setCode] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
     const storedUsers = JSON.parse(sessionStorage.getItem('users') || '[]');
     const allUsers: User[] = storedUsers.length > 0 ? storedUsers : initialUsers;
     
     const validUser = allUsers.find(user => user.code === code && user.status === 'Active');
 
-    if (validUser) {
-      sessionStorage.setItem('loggedInUser', JSON.stringify(validUser));
-      router.push('/dashboard');
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: 'The unique code you entered is incorrect or the user is inactive.',
-      });
-    }
+    setTimeout(() => {
+        if (validUser) {
+          sessionStorage.setItem('loggedInUser', JSON.stringify(validUser));
+          router.push('/dashboard');
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Login Failed',
+            description: 'The unique code you entered is incorrect or the user is inactive.',
+          });
+          setIsLoading(false);
+        }
+    }, 500); // Simulate network delay
   };
 
   return (
@@ -77,13 +82,14 @@ export function LoginPage() {
                 placeholder="Enter your code"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
+                disabled={isLoading}
               />
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={isLoading}>
               <LogIn className="mr-2 h-4 w-4" />
-              Sign In
+              {isLoading ? 'Signing In...' : 'Sign In'}
             </Button>
           </CardFooter>
         </form>
