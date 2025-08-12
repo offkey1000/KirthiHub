@@ -74,11 +74,12 @@ export default function CreateJobPage() {
   return (
     <div className="flex-1 space-y-4 p-4 lg:p-6">
        <div className="flex items-center gap-4">
-        <Button asChild variant="outline" size="icon">
-          <Link href="/dashboard/jobs">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
+          <Button asChild variant="outline" size="icon" className="h-7 w-7">
+            <Link href="/dashboard/jobs">
+                <ArrowLeft className="h-4 w-4" />
+                <span className="sr-only">Back</span>
+            </Link>
+          </Button>
         <h1 className="text-lg font-semibold md:text-2xl">Create New Job</h1>
       </div>
 
