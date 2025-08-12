@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -31,7 +32,7 @@ const KanbanBoard = dynamic(
 );
 
 
-const jobs = [
+const initialJobs = [
   {
     id: 'ORD001',
     title: 'Customer Diamond Ring',
@@ -181,7 +182,25 @@ const jobs = [
   },
 ];
 
+type Job = typeof initialJobs[0];
+
 export default function JobsPage() {
+  const [jobs, setJobs] = useState<Job[]>([]);
+
+  useEffect(() => {
+    // On component mount, check if there's job data in session storage.
+    // This allows us to persist the job list state across navigation.
+    const storedJobs = sessionStorage.getItem('jobs');
+    if (storedJobs) {
+      setJobs(JSON.parse(storedJobs));
+    } else {
+      // If no data in storage, initialize with mock data and save it.
+      setJobs(initialJobs);
+      sessionStorage.setItem('jobs', JSON.stringify(initialJobs));
+    }
+  }, []);
+
+
   return (
     <div className="flex-1 space-y-4 p-4 lg:p-6 flex flex-col">
       <div className="flex items-center justify-between">

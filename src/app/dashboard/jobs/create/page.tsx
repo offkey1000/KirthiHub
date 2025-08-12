@@ -26,6 +26,29 @@ import { ArrowLeft, Upload, X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
+const initialJobs = [
+  {
+    id: 'ORD001',
+    title: 'Customer Diamond Ring',
+    orderType: 'Customer',
+    customerOrderNumber: 'CUST-00123',
+    urgency: 'High',
+    budget: 5000,
+    ornamentType: 'Ring',
+    goldWeight: 8.5,
+    diamondWeight: 1.2,
+    stoneWeight: 0,
+    description: '18k white gold ring with a 1.2-carat central diamond and pave setting on the band. Customer wants a classic, elegant design.',
+    images: ['/placeholder-1.png', '/placeholder-2.png'],
+    status: 'Pending Approval',
+    stage: 'Pending',
+    history: [
+        { user: 'Showroom Staff', action: 'Created Job', timestamp: '2023-10-26T10:00:00Z' }
+    ]
+  },
+];
+
+
 export default function CreateJobPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -58,9 +81,38 @@ export default function CreateJobPage() {
     event.preventDefault();
     setIsSubmitting(true);
 
-    // TODO: Implement actual job creation logic including file uploads
-    console.log('Selected files:', files);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const formData = new FormData(event.currentTarget);
+    const data = Object.fromEntries(formData.entries());
+
+    // In a real app, you'd handle file uploads to a server.
+    // For this prototype, we'll just use the local object URLs for display.
+    const newJob = {
+        id: `${data.orderType === 'Customer' ? 'ORD' : 'STK'}${Math.floor(Math.random() * 900) + 100}`,
+        title: `${data.ornamentType} (${data.orderType})`,
+        orderType: data.orderType as string,
+        customerOrderNumber: data.orderNumber as string || '',
+        urgency: data.urgency as 'Low' | 'Medium' | 'High',
+        budget: Number(data.budget),
+        ornamentType: data.ornamentType as string,
+        goldWeight: Number(data.goldWeight),
+        diamondWeight: Number(data.diamondWeight),
+        stoneWeight: Number(data.stoneWeight),
+        description: data.description as string,
+        images: imagePreviews, // Storing blob URLs for prototype
+        status: 'Pending Approval',
+        stage: 'Pending' as 'Pending',
+        history: [
+            { user: 'Current User', action: 'Created Job', timestamp: new Date().toISOString() }
+        ]
+    };
+
+    // Add job to session storage to persist across navigation
+    const storedJobs = JSON.parse(sessionStorage.getItem('jobs') || '[]');
+    const allJobs = storedJobs.length > 0 ? storedJobs : initialJobs;
+    sessionStorage.setItem('jobs', JSON.stringify([...allJobs, newJob]));
+
+
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     toast({
       title: 'Job Created',
@@ -95,7 +147,7 @@ export default function CreateJobPage() {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="orderType">Order Type</Label>
-                <Select value={orderType} onValueChange={setOrderType}>
+                <Select name="orderType" value={orderType} onValueChange={setOrderType}>
                   <SelectTrigger id="orderType">
                     <SelectValue placeholder="Select order type" />
                   </SelectTrigger>
@@ -109,13 +161,13 @@ export default function CreateJobPage() {
               {orderType === 'Customer' && (
                 <div className="space-y-2">
                   <Label htmlFor="orderNumber">Customer Order Number</Label>
-                  <Input id="orderNumber" placeholder="e.g., CUST-00123" />
+                  <Input id="orderNumber" name="orderNumber" placeholder="e.g., CUST-00123" />
                 </div>
               )}
 
               <div className="space-y-2">
                 <Label htmlFor="urgency">Urgency</Label>
-                <Select>
+                <Select name="urgency" required>
                   <SelectTrigger id="urgency">
                     <SelectValue placeholder="Select urgency level" />
                   </SelectTrigger>
@@ -129,12 +181,12 @@ export default function CreateJobPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="budget">Budget</Label>
-                <Input id="budget" type="number" placeholder="Enter budget amount" />
+                <Input id="budget" name="budget" type="number" placeholder="Enter budget amount" />
               </div>
 
                <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="ornamentType">Ornament Type</Label>
-                <Input id="ornamentType" placeholder="e.g., Ring, Necklace, Bracelet" />
+                <Input id="ornamentType" name="ornamentType" placeholder="e.g., Ring, Necklace, Bracelet" required />
               </div>
 
             </div>
@@ -147,22 +199,22 @@ export default function CreateJobPage() {
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                     <div className="space-y-2">
                         <Label htmlFor="goldWeight">Gold</Label>
-                        <Input id="goldWeight" type="number" step="0.01" placeholder="e.g., 10.50" />
+                        <Input id="goldWeight" name="goldWeight" type="number" step="0.01" placeholder="e.g., 10.50" />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="diamondWeight">Diamond</Label>
-                        <Input id="diamondWeight" type="number" step="0.01" placeholder="e.g., 1.25" />
+                        <Input id="diamondWeight" name="diamondWeight" type="number" step="0.01" placeholder="e.g., 1.25" />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="stoneWeight">Coloured Stone</Label>
-                        <Input id="stoneWeight" type="number" step="0.01" placeholder="e.g., 5.75" />
+                        <Input id="stoneWeight" name="stoneWeight" type="number" step="0.01" placeholder="e.g., 5.75" />
                     </div>
                 </div>
             </div>
             
             <div className="space-y-2">
                 <Label htmlFor="description">Description / Notes</Label>
-                <Textarea id="description" placeholder="Add any relevant details or instructions for the artisans."/>
+                <Textarea id="description" name="description" placeholder="Add any relevant details or instructions for the artisans."/>
             </div>
 
             <div className="space-y-2">
