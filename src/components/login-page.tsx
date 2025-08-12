@@ -36,6 +36,7 @@ const initialUsers = [
     name: 'Manufacturing Manager',
     role: 'Manufacturing Manager',
     status: 'Active',
+    code: '1234'
   },
   {
     id: 'USR004',
@@ -60,6 +61,7 @@ const initialUsers = [
     name: 'Casting Artisan',
     role: 'Artisan (Casting)',
     status: 'Active',
+    code: '5678'
   },
 ];
 
@@ -80,6 +82,7 @@ export function LoginPage() {
     const validUser = allUsers.find(user => user.code === code && user.status === 'Active');
 
     if (validUser) {
+      sessionStorage.setItem('loggedInUser', JSON.stringify(validUser));
       router.push('/dashboard');
     } else {
       toast({

@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, MessageSquare, Paperclip, Send, User, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Paperclip, Send, User, AlertTriangle, CheckCircle, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -60,7 +60,32 @@ const initialJobs = [
     stage: 'Pending',
     history: [
         { user: 'Showroom Staff', action: 'Created Job', timestamp: '2023-10-26T10:00:00Z' }
-    ]
+    ],
+    assignedTo: null,
+  },
+   {
+    id: 'ORD003',
+    title: 'Wedding Band Set',
+    orderType: 'Customer',
+    customerOrderNumber: 'CUST-00125',
+    urgency: 'High',
+    budget: 7000,
+    ornamentType: 'Ring Set',
+    goldWeight: 15.0,
+    diamondWeight: 2.0,
+    stoneWeight: 0,
+    description: 'Matching wedding bands in platinum. His and hers. Both with inset diamonds.',
+    images: [],
+    status: 'In Setting',
+    stage: 'WIP',
+     history: [
+        { user: 'Showroom Manager', action: 'Created Job', timestamp: '2023-10-23T16:00:00Z' },
+        { user: 'Manufacturing Manager', action: 'Approved Job', timestamp: '2023-10-23T17:00:00Z' },
+        { user: 'Artisan (Casting)', action: 'Marked as complete', timestamp: '2023-10-24T14:00:00Z' },
+        { user: 'Artisan (Filing)', action: 'Marked as complete', timestamp: '2023-10-25T11:00:00Z' },
+        { user: 'Artisan (Setting)', action: 'Accepted Job', timestamp: '2023-10-25T12:00:00Z' }
+    ],
+    assignedTo: 'USR007'
   },
 ];
 
@@ -83,23 +108,32 @@ const initialUsers = [
     name: 'Casting Artisan',
     role: 'Artisan (Casting)',
     status: 'Active',
+    code: '5678'
   },
 ];
 
 
-type Job = typeof initialJobs[0];
-type User = typeof initialUsers[0];
+type Job = (typeof initialJobs)[0];
+type User = (typeof initialUsers)[0] & { role: string };
 
 const JobDetailPage = () => {
     const router = useRouter();
     const params = useParams();
     const { toast } = useToast();
     const jobId = params.id as string;
+    
     const [job, setJob] = useState<Job | null>(null);
     const [artisans, setArtisans] = useState<User[]>([]);
+    const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
+
     const [selectedArtisan, setSelectedArtisan] = useState('');
     const [rejectionReason, setRejectionReason] = useState('');
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    
+    const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+    const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+    const [files, setFiles] = useState<File[]>([]);
     
     useEffect(() => {
         const storedJobs = JSON.parse(sessionStorage.getItem('jobs') || '[]');
@@ -111,6 +145,12 @@ const JobDetailPage = () => {
         const allUsers = storedUsers.length > 0 ? storedUsers : initialUsers;
         const artisanUsers = allUsers.filter((u: User) => u.role.startsWith('Artisan') && u.status === 'Active');
         setArtisans(artisanUsers);
+
+        const storedUser = sessionStorage.getItem('loggedInUser');
+        if (storedUser) {
+            setLoggedInUser(JSON.parse(storedUser));
+        }
+
     }, [jobId]);
 
     const updateJobInStorage = (updatedJob: Job) => {
@@ -121,6 +161,43 @@ const JobDetailPage = () => {
         setJob(updatedJob);
     };
 
+    const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFiles = event.target.files;
+        if (selectedFiles) {
+        const newFiles = Array.from(selectedFiles);
+        setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+        const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
+        setImagePreviews((prevPreviews) => [...prevPreviews, ...newPreviews]);
+        }
+    };
+    
+    const handleRemoveImage = (index: number) => {
+        setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
+        setImagePreviews((prevPreviews) => {
+        const newPreviews = prevPreviews.filter((_, i) => i !== index);
+        URL.revokeObjectURL(prevPreviews[index]);
+        return newPreviews;
+        });
+    };
+
+    const handleUploadImages = () => {
+        if (!job) return;
+        const updatedJob = {
+            ...job,
+            images: [...job.images, ...imagePreviews],
+             history: [...job.history, { 
+                user: loggedInUser?.name || 'Artisan', 
+                action: `Uploaded ${files.length} new image(s)`, 
+                timestamp: new Date().toISOString() 
+            }],
+        };
+        updateJobInStorage(updatedJob);
+        toast({ title: 'Success', description: 'Images uploaded successfully.' });
+        setIsUploadDialogOpen(false);
+        setImagePreviews([]);
+        setFiles([]);
+    };
+
     const handleAssignJob = () => {
         if (!job || !selectedArtisan) {
             toast({ variant: 'destructive', title: 'Error', description: 'Please select an artisan.' });
@@ -129,16 +206,15 @@ const JobDetailPage = () => {
         const artisan = artisans.find(a => a.id === selectedArtisan);
         if (!artisan) return;
 
-        const newHistoryEntry = {
-            user: 'Manufacturing Manager',
-            action: `Assigned job to ${artisan.name} (${artisan.role})`,
-            timestamp: new Date().toISOString(),
-        };
-
         const updatedJob = {
             ...job,
             status: `Assigned to ${artisan.name}`,
-            history: [...job.history, newHistoryEntry],
+            assignedTo: artisan.id,
+            history: [...job.history, {
+                user: loggedInUser?.name || 'Manager',
+                action: `Assigned job to ${artisan.name} (${artisan.role})`,
+                timestamp: new Date().toISOString(),
+            }],
         };
 
         updateJobInStorage(updatedJob);
@@ -147,7 +223,7 @@ const JobDetailPage = () => {
             title: 'Job Assigned',
             description: `${job.title} has been assigned to ${artisan.name}.`,
         });
-        setIsDialogOpen(false);
+        setIsAssignDialogOpen(false);
         setSelectedArtisan('');
     };
     
@@ -157,17 +233,16 @@ const JobDetailPage = () => {
             return;
         }
 
-        const newHistoryEntry = {
-            user: 'Manufacturing Manager',
-            action: `Job Rejected. Reason: ${rejectionReason}`,
-            timestamp: new Date().toISOString(),
-        };
-
         const updatedJob = {
             ...job,
             status: `Rejected`,
-            stage: 'Pending' as const, // Move back to pending stage
-            history: [...job.history, newHistoryEntry],
+            stage: 'Pending' as const,
+            assignedTo: null,
+            history: [...job.history, {
+                user: loggedInUser?.name || 'Manager',
+                action: `Job Rejected. Reason: ${rejectionReason}`,
+                timestamp: new Date().toISOString(),
+            }],
         };
 
         updateJobInStorage(updatedJob);
@@ -178,6 +253,26 @@ const JobDetailPage = () => {
             description: `${job.title} has been rejected and sent back.`,
         });
         setRejectionReason('');
+    };
+
+    const handleArtisanAction = (action: 'Accepted' | 'Completed') => {
+        if (!job || !loggedInUser) return;
+        
+        const isAccepting = action === 'Accepted';
+        const newStatus = isAccepting ? `In Progress (${loggedInUser.name})` : `Completed by ${loggedInUser.name}`;
+        const actionText = isAccepting ? 'Accepted Job' : 'Marked Job as Complete';
+
+        const updatedJob = {
+            ...job,
+            status: newStatus,
+            history: [...job.history, {
+                user: loggedInUser.name,
+                action: actionText,
+                timestamp: new Date().toISOString(),
+            }],
+        };
+        updateJobInStorage(updatedJob);
+        toast({ title: 'Success', description: `Job has been marked as: ${action}` });
     };
 
     if (!job) {
@@ -195,6 +290,7 @@ const JobDetailPage = () => {
         'Low': 'outline',
     } as const;
 
+    const isArtisan = loggedInUser?.role.startsWith('Artisan');
 
     return (
         <div className="flex-1 space-y-4 p-4 lg:p-6">
@@ -314,72 +410,121 @@ const JobDetailPage = () => {
                             <CardTitle>Actions</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2">
-                             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                                <DialogTrigger asChild>
-                                    <Button className="w-full">Assign to Artisan</Button>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-[425px]">
-                                    <DialogHeader>
-                                        <DialogTitle>Assign Job to Artisan</DialogTitle>
-                                        <DialogDescription>
-                                            Select an artisan to assign this job to. They will be notified.
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="grid gap-4 py-4">
-                                        <div className="grid grid-cols-4 items-center gap-4">
-                                            <Label htmlFor="artisan" className="text-right">
-                                                Artisan
-                                            </Label>
-                                            <Select value={selectedArtisan} onValueChange={setSelectedArtisan}>
-                                                <SelectTrigger id="artisan" className="col-span-3">
-                                                    <SelectValue placeholder="Select an artisan" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {artisans.map(artisan => (
-                                                        <SelectItem key={artisan.id} value={artisan.id}>
-                                                            {artisan.name} - {artisan.role}
-                                                        </SelectItem>
+                             { isArtisan ? (
+                                <>
+                                    <Button className="w-full" onClick={() => handleArtisanAction('Accepted')}>Accept Job</Button>
+                                    <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button variant="secondary" className="w-full">Upload Finished Work</Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Upload Images</DialogTitle>
+                                                <DialogDescription>Select images of the finished work to upload.</DialogDescription>
+                                            </DialogHeader>
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-center w-full">
+                                                    <Label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
+                                                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                                            <Upload className="w-8 h-8 mb-4 text-muted-foreground" />
+                                                            <p className="mb-2 text-sm text-muted-foreground">
+                                                                <span className="font-semibold">Click to upload</span> or drag and drop
+                                                            </p>
+                                                        </div>
+                                                        <Input id="dropzone-file" type="file" className="hidden" multiple onChange={handleImageChange} accept="image/*" />
+                                                    </Label>
+                                                </div>
+                                                {imagePreviews.length > 0 && (
+                                                    <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                    {imagePreviews.map((src, index) => (
+                                                        <div key={index} className="relative group">
+                                                        <Image src={src} alt={`Preview ${index}`} width={150} height={150} className="rounded-md object-cover w-full aspect-square"/>
+                                                        <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => handleRemoveImage(index)}>
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
+                                                        </div>
                                                     ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-                                    <DialogFooter>
-                                        <Button type="button" onClick={handleAssignJob}>Assign Job</Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <DialogFooter>
+                                                <Button type="button" variant="outline" onClick={() => setIsUploadDialogOpen(false)}>Cancel</Button>
+                                                <Button type="button" onClick={handleUploadImages} disabled={files.length === 0}>Upload</Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                    <Button variant="destructive" className="w-full" onClick={() => handleArtisanAction('Completed')}>Mark as Complete</Button>
+                                </>
+                            ) : (
+                                <>
+                                    <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button className="w-full">Assign to Artisan</Button>
+                                        </DialogTrigger>
+                                        <DialogContent className="sm:max-w-[425px]">
+                                            <DialogHeader>
+                                                <DialogTitle>Assign Job to Artisan</DialogTitle>
+                                                <DialogDescription>
+                                                    Select an artisan to assign this job to. They will be notified.
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <div className="grid gap-4 py-4">
+                                                <div className="grid grid-cols-4 items-center gap-4">
+                                                    <Label htmlFor="artisan" className="text-right">
+                                                        Artisan
+                                                    </Label>
+                                                    <Select value={selectedArtisan} onValueChange={setSelectedArtisan}>
+                                                        <SelectTrigger id="artisan" className="col-span-3">
+                                                            <SelectValue placeholder="Select an artisan" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {artisans.map(artisan => (
+                                                                <SelectItem key={artisan.id} value={artisan.id}>
+                                                                    {artisan.name} - {artisan.role}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
+                                            <DialogFooter>
+                                                <Button type="button" onClick={handleAssignJob}>Assign Job</Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
 
-                            <Button variant="secondary" className="w-full">Mark as Complete</Button>
-                            
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" className="w-full">Reject / Send Back</Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you sure you want to reject this job?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This action will send the job back to the previous stage. Please provide a reason for rejection.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                     <div className="space-y-2">
-                                        <Label htmlFor="reason">Rejection Reason</Label>
-                                        <Textarea 
-                                            id="reason" 
-                                            placeholder="e.g., Casting issue, design not as per spec..." 
-                                            value={rejectionReason}
-                                            onChange={(e) => setRejectionReason(e.target.value)}
-                                        />
-                                    </div>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleRejectJob} disabled={!rejectionReason}>
-                                            Confirm Rejection
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+                                    <Button variant="secondary" className="w-full">Mark as Complete</Button>
+                                    
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" className="w-full">Reject / Send Back</Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you sure you want to reject this job?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This action will send the job back to the previous stage. Please provide a reason for rejection.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="reason">Rejection Reason</Label>
+                                                <Textarea 
+                                                    id="reason" 
+                                                    placeholder="e.g., Casting issue, design not as per spec..." 
+                                                    value={rejectionReason}
+                                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                                />
+                                            </div>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleRejectJob} disabled={!rejectionReason}>
+                                                    Confirm Rejection
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

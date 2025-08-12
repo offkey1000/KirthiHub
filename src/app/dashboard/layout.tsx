@@ -4,14 +4,15 @@
 import {
   Bell,
   Home,
-  Package,
   Users,
   Settings,
   Diamond,
   LayoutGrid,
+  ListChecks,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,11 @@ import {
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+type User = {
+    role: string;
+};
 
 export default function DashboardLayout({
   children,
@@ -41,13 +47,61 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const navLinks = [
+  useEffect(() => {
+    const storedUser = sessionStorage.getItem('loggedInUser');
+    if (storedUser) {
+        setUser(JSON.parse(storedUser));
+    }
+    setIsLoading(false);
+  }, []);
+  
+  const handleLogout = () => {
+    sessionStorage.removeItem('loggedInUser');
+    router.push('/');
+  }
+
+  const isArtisan = user?.role.startsWith('Artisan');
+
+  const managerNavLinks = [
     { href: '/dashboard', icon: Home, label: 'Dashboard' },
     { href: '/dashboard/jobs', icon: LayoutGrid, label: 'Job Pipeline', badge: 7 },
     { href: '/dashboard/users', icon: Users, label: 'Users' },
     { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ];
+
+  const artisanNavLinks = [
+    { href: '/dashboard/my-jobs', icon: ListChecks, label: 'My Jobs', badge: 2 },
+    { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
+  ];
+
+  const navLinks = isArtisan ? artisanNavLinks : managerNavLinks;
+
+  if (isLoading) {
+    return (
+        <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+            <div className="hidden border-r bg-muted/40 md:block p-4 space-y-4">
+                <Skeleton className="h-14 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+            </div>
+            <div className="flex flex-col">
+                <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+                    <Skeleton className="h-8 w-8 md:hidden" />
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                </header>
+                <main className="flex-1 p-4">
+                    <Skeleton className="h-full w-full" />
+                </main>
+            </div>
+        </div>
+    )
+  }
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -71,8 +125,7 @@ export default function DashboardLayout({
                   href={link.href}
                   className={cn(
                     'flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary',
-                    pathname.startsWith(link.href) && link.href !== '/dashboard' && 'bg-muted text-primary',
-                    pathname === '/dashboard' && link.href === '/dashboard' && 'bg-muted text-primary'
+                    pathname === link.href && 'bg-muted text-primary'
                   )}
                 >
                   <link.icon className="h-4 w-4" />
@@ -127,8 +180,7 @@ export default function DashboardLayout({
                     href={link.href}
                     className={cn(
                       'flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground',
-                      pathname.startsWith(link.href) && link.href !== '/dashboard' && 'bg-muted text-foreground',
-                      pathname === '/dashboard' && link.href === '/dashboard' && 'bg-muted text-foreground'
+                       pathname === link.href && 'bg-muted text-foreground'
                     )}
                   >
                     <link.icon className="h-5 w-5" />
@@ -181,7 +233,7 @@ export default function DashboardLayout({
               <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>Settings</DropdownMenuItem>
               <DropdownMenuItem>Support</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push('/')}>Logout</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
