@@ -127,8 +127,8 @@ const initialUsers = [
 ];
 
 
-type Job = (typeof initialJobs)[0];
-type User = (typeof initialUsers)[0] & { role: string };
+type Job = typeof initialJobs[0];
+type User = typeof initialUsers[0] & { role: string };
 
 const JobDetailPage = () => {
     const router = useRouter();
@@ -222,7 +222,7 @@ const JobDetailPage = () => {
 
         const updatedJob = {
             ...job,
-            status: `Assigned to ${artisan.name}`,
+            status: `Assigned to ${artisan.role}`,
             stage: 'WIP' as const,
             assignedTo: artisan.id,
             history: [...job.history, {
@@ -251,8 +251,8 @@ const JobDetailPage = () => {
         const updatedJob = {
             ...job,
             status: `Rejected by Manager`,
-            stage: 'WIP' as const, // Keep it in WIP for rework
-            assignedTo: job.assignedTo, // Keep it assigned to the same artisan
+            stage: 'WIP' as const, 
+            assignedTo: job.assignedTo, 
             history: [...job.history, {
                 user: loggedInUser?.name || 'Manager',
                 action: `Artisan work rejected. Reason: ${rejectionReason}`,
@@ -274,14 +274,17 @@ const JobDetailPage = () => {
         if (!job || !loggedInUser) return;
         
         const isAccepting = action === 'Accepted';
-        const newStatus = isAccepting ? `In Progress (${loggedInUser.name})` : `Ready for Manager Review`;
-        const newStage = 'WIP' as const; // Stays in WIP until QC approves
-        const actionText = isAccepting ? 'Accepted Job' : `Marked as Complete`;
+        
+        const artisanRole = loggedInUser.role.replace('Artisan (', '').replace(')', '');
+        const newStatus = isAccepting ? `In Progress (${artisanRole})` : `${artisanRole} Complete`;
+        const newStage = 'WIP' as const;
+        const actionText = isAccepting ? 'Accepted Job' : `Marked ${artisanRole} stage as Complete`;
 
         const updatedJob = {
             ...job,
             status: newStatus,
             stage: newStage,
+            assignedTo: isAccepting ? job.assignedTo : null, // Un-assign on completion
             history: [...job.history, {
                 user: loggedInUser.name,
                 action: actionText,
@@ -293,16 +296,16 @@ const JobDetailPage = () => {
         toast({ title: 'Success', description: `Job status updated: ${newStatus}` });
     };
 
-    const handleManagerApproveForQc = () => {
+    const handleManagerReadyForQc = () => {
         if (!job || !loggedInUser) return;
         
         const updatedJob = {
             ...job,
             status: 'QC Pending',
-            stage: 'WIP' as const,
+            stage: 'WIP' as const, // It's a special status within WIP
             history: [...job.history, {
                 user: loggedInUser.name,
-                action: `Approved for QC`,
+                action: `Marked as Ready for QC`,
                 timestamp: new Date().toISOString(),
             }],
         };
@@ -324,6 +327,7 @@ const JobDetailPage = () => {
             ...job,
             status: isApproved ? 'Completed' : 'Rejected by QC',
             stage: isApproved ? 'Completed' as const : 'WIP' as const,
+            assignedTo: isApproved ? job.assignedTo : null, // Un-assign on QC reject
             history: [...job.history, {
                 user: loggedInUser.name,
                 action: isApproved ? 'Verified & Completed Job' : `QC Rejected. Reason: ${rejectionReason}`,
@@ -333,7 +337,7 @@ const JobDetailPage = () => {
         updateJobInStorage(updatedJob);
         toast({
             title: isApproved ? 'Job Completed' : 'Job Rejected',
-            description: isApproved ? 'The job has been successfully verified and marked as complete.' : 'The job has been sent back for rework.',
+            description: isApproved ? 'The job has been successfully verified and marked as complete.' : 'The job has been sent back to the manager for reassignment.',
         });
          if (action === 'reject') {
             setRejectionReason('');
@@ -362,13 +366,17 @@ const JobDetailPage = () => {
 
     const isJobAssignedToMe = isArtisan && job.assignedTo === loggedInUser.id;
 
-    const showManagerAssign = isManager && (job.status === 'Pending Approval' || !job.assignedTo);
-    const showManagerReject = isManager && job.stage === 'WIP' && job.status !== 'Pending Approval' && job.status !== 'QC Pending' && !job.status.startsWith('Assigned to');
-    const showManagerApproveForQc = isManager && job.status === 'Ready for Manager Review';
-    
+    // Manager Actions Visibility
+    const showManagerInitialAssign = isManager && job.stage === 'Pending';
+    const showManagerReassign = isManager && job.stage === 'WIP' && !job.assignedTo && job.status !== 'QC Pending';
+    const showManagerReject = isManager && job.stage === 'WIP' && !!job.assignedTo;
+    const showManagerReadyForQc = isManager && job.stage === 'WIP' && job.status !== 'QC Pending';
+
+    // Artisan Actions Visibility
     const showArtisanAccept = isJobAssignedToMe && job.status.startsWith('Assigned to');
     const showArtisanWork = isJobAssignedToMe && (job.status.startsWith('In Progress') || job.status.startsWith('Rejected by'));
     
+    // QC Manager Actions Visibility
     const showQcActions = isQcManager && job.status === 'QC Pending';
 
     return (
@@ -535,15 +543,15 @@ const JobDetailPage = () => {
                                             </DialogFooter>
                                         </DialogContent>
                                     </Dialog>
-                                    <Button className="w-full" onClick={() => handleArtisanAction('Completed')}>Mark as Complete</Button>
+                                    <Button className="w-full" onClick={() => handleArtisanAction('Completed')}>Mark My Work as Complete</Button>
                                 </>
                             )}
                             
                             {/* Manager Actions */}
-                            { showManagerAssign && (
+                            { (showManagerInitialAssign || showManagerReassign) && (
                                 <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
                                     <DialogTrigger asChild>
-                                        <Button className="w-full">Assign to Artisan</Button>
+                                        <Button className="w-full">{showManagerInitialAssign ? 'Approve & Assign' : 'Assign to Next Artisan'}</Button>
                                     </DialogTrigger>
                                     <DialogContent className="sm:max-w-[425px]">
                                         <DialogHeader>
@@ -577,8 +585,8 @@ const JobDetailPage = () => {
                                     </DialogContent>
                                 </Dialog>
                             )}
-                            { showManagerApproveForQc && (
-                                <Button className="w-full" onClick={handleManagerApproveForQc}>Approve for QC</Button>
+                            { showManagerReadyForQc && (
+                                <Button className="w-full" onClick={handleManagerReadyForQc}>Ready for QC</Button>
                             )}
                             { showManagerReject && (
                                 <AlertDialog>
@@ -651,7 +659,7 @@ const JobDetailPage = () => {
                                     </AlertDialog>
                                 </>
                             )}
-                             { !showManagerAssign && !showManagerReject && !showArtisanAccept && !showArtisanWork && !showQcActions && !showManagerApproveForQc && (
+                             { !showManagerInitialAssign && !showManagerReassign && !showManagerReject && !showArtisanAccept && !showArtisanWork && !showQcActions && !showManagerReadyForQc &&(
                                 <p className="text-sm text-muted-foreground text-center">No actions available for you at this stage.</p>
                              )}
                         </CardContent>
@@ -663,3 +671,5 @@ const JobDetailPage = () => {
 };
 
 export default JobDetailPage;
+
+    
