@@ -1,4 +1,6 @@
 
+'use client';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -114,8 +116,9 @@ export default function UsersPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <Button asChild variant="ghost" size="icon">
-                      <Link href="#">
+                      <Link href={`/dashboard/users/${user.id}`}>
                         <ArrowUpRight className="h-4 w-4" />
+                         <span className="sr-only">View User</span>
                       </Link>
                     </Button>
                   </TableCell>
