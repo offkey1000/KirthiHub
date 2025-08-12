@@ -84,6 +84,22 @@ export default function CreateJobPage() {
 
     const formData = new FormData(event.currentTarget);
     const data = Object.fromEntries(formData.entries());
+
+    const storedJobs = JSON.parse(sessionStorage.getItem('jobs') || '[]');
+    const allJobs = storedJobs.length > 0 ? storedJobs : initialJobs;
+
+    if (data.orderType === 'Stock') {
+        const stockOrdersCount = allJobs.filter((job: { orderType: string; }) => job.orderType === 'Stock').length;
+        if (stockOrdersCount >= 50) {
+            toast({
+                variant: 'destructive',
+                title: 'Stock Order Limit Reached',
+                description: 'You cannot create more than 50 stock orders.',
+            });
+            setIsSubmitting(false);
+            return;
+        }
+    }
     
     const newJob = {
         id: `${data.orderType === 'Customer' ? 'ORD' : 'STK'}${Math.floor(Math.random() * 900) + 100}`,
@@ -97,7 +113,7 @@ export default function CreateJobPage() {
         diamondWeight: Number(data.diamondWeight),
         stoneWeight: Number(data.stoneWeight),
         description: data.description as string,
-        images: imagePreviews, // Storing base64 data URIs
+        images: imagePreviews,
         status: 'Pending Approval',
         stage: 'Pending' as 'Pending',
         assignedTo: null,
@@ -106,9 +122,6 @@ export default function CreateJobPage() {
         ]
     };
 
-    // Add job to session storage to persist across navigation
-    const storedJobs = JSON.parse(sessionStorage.getItem('jobs') || '[]');
-    const allJobs = storedJobs.length > 0 ? storedJobs : initialJobs;
     sessionStorage.setItem('jobs', JSON.stringify([...allJobs, newJob]));
 
 
