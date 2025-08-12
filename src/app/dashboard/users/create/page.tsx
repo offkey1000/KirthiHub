@@ -32,8 +32,8 @@ export default function CreateUserPage() {
     };
 
     // Add user to session storage to persist across navigation
-    const storedUsers = JSON.parse(sessionStorage.getItem('users') || '[]');
-    const allUsers = storedUsers.length > 0 ? storedUsers : initialUsers;
+    const storedUsers = JSON.parse(sessionStorage.getItem('users') || 'null');
+    const allUsers = storedUsers || initialUsers;
     sessionStorage.setItem('users', JSON.stringify([...allUsers, newUser]));
 
     toast({

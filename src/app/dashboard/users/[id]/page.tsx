@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 
-const users = [
+const initialUsers = [
   {
     id: 'USR001',
     name: 'Admin User',
@@ -18,7 +18,7 @@ const users = [
   },
 ];
 
-type User = typeof users[0];
+type User = typeof initialUsers[0];
 
 export default function UserDetailPage() {
   const router = useRouter();
@@ -31,8 +31,8 @@ export default function UserDetailPage() {
     // In a real app, this would be a fetch call.
     // For now, we simulate fetching from our mock data.
     // We also check session storage for any updates from the user list page.
-    const storedUsers = JSON.parse(sessionStorage.getItem('users') || '[]');
-    const allUsers = storedUsers.length > 0 ? storedUsers : users;
+    const storedUsers = JSON.parse(sessionStorage.getItem('users') || 'null');
+    const allUsers = storedUsers || initialUsers;
     const foundUser = allUsers.find((u: User) => u.id === userId) || null;
     setUser(foundUser);
   }, [userId]);
@@ -43,8 +43,8 @@ export default function UserDetailPage() {
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Update user in session storage to persist across navigation
-    const storedUsers = JSON.parse(sessionStorage.getItem('users') || '[]');
-    const allUsers = storedUsers.length > 0 ? storedUsers : users;
+    const storedUsers = JSON.parse(sessionStorage.getItem('users') || 'null');
+    const allUsers = storedUsers || initialUsers;
     const updatedUsers = allUsers.map((u: User) => 
         u.id === userId ? { ...u, ...data } : u
     );
@@ -62,8 +62,8 @@ export default function UserDetailPage() {
     await new Promise(resolve => setTimeout(resolve, 500));
     
     // Remove user from session storage
-    const storedUsers = JSON.parse(sessionStorage.getItem('users') || '[]');
-    const allUsers = storedUsers.length > 0 ? storedUsers : users;
+    const storedUsers = JSON.parse(sessionStorage.getItem('users') || 'null');
+    const allUsers = storedUsers || initialUsers;
     const updatedUsers = allUsers.filter((u: User) => u.id !== userId);
     sessionStorage.setItem('users', JSON.stringify(updatedUsers));
 

@@ -100,8 +100,8 @@ const JobDetailPage = () => {
         const foundJob = allJobs.find((j: Job) => j.id === jobId) || null;
         setJob(foundJob);
 
-        const storedUsers = JSON.parse(sessionStorage.getItem('users') || '[]');
-        const allUsers = storedUsers.length > 0 ? storedUsers : initialUsers;
+        const storedUsers = JSON.parse(sessionStorage.getItem('users') || 'null');
+        const allUsers = storedUsers || initialUsers;
         const artisanUsers = allUsers.filter((u: User) => u.role.startsWith('Artisan') && u.status === 'Active');
         setArtisans(artisanUsers);
 
@@ -194,7 +194,10 @@ const JobDetailPage = () => {
              toast({ variant: 'destructive', title: 'Error', description: 'Please provide a reason for rejection.' });
             return;
         }
-        const assignedArtisan = initialUsers.find(a => a.id === job.assignedTo);
+        
+        const storedUsers = JSON.parse(sessionStorage.getItem('users') || 'null');
+        const allUsers = storedUsers || initialUsers;
+        const assignedArtisan = allUsers.find((a: User) => a.id === job.assignedTo);
         if(!assignedArtisan) return;
 
         const updatedJob = {
@@ -222,7 +225,9 @@ const JobDetailPage = () => {
      const handleApproveArtisanWork = () => {
         if (!job || !job.assignedTo) return;
         
-        const assignedArtisan = initialUsers.find(a => a.id === job.assignedTo);
+        const storedUsers = JSON.parse(sessionStorage.getItem('users') || 'null');
+        const allUsers = storedUsers || initialUsers;
+        const assignedArtisan = allUsers.find((a: User) => a.id === job.assignedTo);
         if (!assignedArtisan) return;
         const artisanRole = assignedArtisan.role.replace('Artisan (', '').replace(')', '');
 

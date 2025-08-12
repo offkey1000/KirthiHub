@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Gem, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+
 const initialUsers = [
   {
     id: 'USR001',
@@ -40,8 +41,13 @@ export function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     
-    const storedUsers = JSON.parse(sessionStorage.getItem('users') || '[]');
-    const allUsers: User[] = storedUsers.length > 0 ? storedUsers : initialUsers;
+    const storedUsers = JSON.parse(sessionStorage.getItem('users') || 'null');
+    const allUsers: User[] = storedUsers || initialUsers;
+
+    // If session storage was empty, set it with initial users
+    if (!storedUsers) {
+        sessionStorage.setItem('users', JSON.stringify(allUsers));
+    }
     
     const validUser = allUsers.find(user => user.code === code && user.status === 'Active');
 

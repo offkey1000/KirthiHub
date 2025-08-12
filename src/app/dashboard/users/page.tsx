@@ -39,7 +39,6 @@ export default function UsersPage() {
 
   useEffect(() => {
     // On component mount, check if there's user data in session storage.
-    // This allows us to persist the user list state across navigation.
     const storedUsers = sessionStorage.getItem('users');
     if (storedUsers) {
       setUsers(JSON.parse(storedUsers));
