@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, MessageSquare, Paperclip, Send, User, AlertTriangle, CheckCircle, Upload, X, ShieldCheck, ShieldX } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Paperclip, Send, User, AlertTriangle, CheckCircle, Upload, X, ShieldCheck, ShieldX, CheckSquare, ThumbsUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -243,14 +243,16 @@ const JobDetailPage = () => {
     };
     
     const handleRejectArtisanWork = () => {
-        if (!job || !rejectionReason) {
+        if (!job || !rejectionReason || !job.assignedTo) {
              toast({ variant: 'destructive', title: 'Error', description: 'Please provide a reason for rejection.' });
             return;
         }
+        const assignedArtisan = artisans.find(a => a.id === job.assignedTo);
+        if(!assignedArtisan) return;
 
         const updatedJob = {
             ...job,
-            status: `Rejected by Manager`,
+            status: `Rework required (${assignedArtisan.role})`,
             stage: 'WIP' as const, 
             assignedTo: job.assignedTo, 
             history: [...job.history, {
@@ -269,6 +271,30 @@ const JobDetailPage = () => {
         });
         setRejectionReason('');
     };
+    
+     const handleApproveArtisanWork = () => {
+        if (!job || !job.assignedTo) return;
+        
+        const assignedArtisan = artisans.find(a => a.id === job.assignedTo);
+        if (!assignedArtisan) return;
+        const artisanRole = assignedArtisan.role.replace('Artisan (', '').replace(')', '');
+
+        const updatedJob = {
+            ...job,
+            status: `${artisanRole} work approved`,
+            stage: 'WIP' as const,
+            assignedTo: null, // Un-assign to allow for next assignment
+            history: [...job.history, {
+                user: loggedInUser?.name || 'Manager',
+                action: `Approved ${artisanRole} work`,
+                timestamp: new Date().toISOString(),
+            }],
+        };
+
+        updateJobInStorage(updatedJob);
+        toast({ title: 'Work Approved', description: `The ${artisanRole} stage is complete.` });
+    };
+
 
     const handleArtisanAction = (action: 'Accepted' | 'Completed') => {
         if (!job || !loggedInUser) return;
@@ -276,7 +302,7 @@ const JobDetailPage = () => {
         const isAccepting = action === 'Accepted';
         
         const artisanRole = loggedInUser.role.replace('Artisan (', '').replace(')', '');
-        const newStatus = isAccepting ? `In Progress (${artisanRole})` : `${artisanRole} Complete`;
+        const newStatus = isAccepting ? `In Progress (${artisanRole})` : `Ready for Manager Review (${artisanRole})`;
         const newStage = 'WIP' as const;
         const actionText = isAccepting ? 'Accepted Job' : `Marked ${artisanRole} stage as Complete`;
 
@@ -284,7 +310,7 @@ const JobDetailPage = () => {
             ...job,
             status: newStatus,
             stage: newStage,
-            assignedTo: isAccepting ? job.assignedTo : null, // Un-assign on completion
+            assignedTo: job.assignedTo, // Keep assigned on completion for manager review
             history: [...job.history, {
                 user: loggedInUser.name,
                 action: actionText,
@@ -302,6 +328,7 @@ const JobDetailPage = () => {
         const updatedJob = {
             ...job,
             status: 'QC Pending',
+            assignedTo: null,
             history: [...job.history, {
                 user: loggedInUser.name,
                 action: `Marked as Ready for QC`,
@@ -326,7 +353,7 @@ const JobDetailPage = () => {
             ...job,
             status: isApproved ? 'Completed' : 'Rejected by QC',
             stage: isApproved ? 'Completed' as const : 'WIP' as const,
-            assignedTo: isApproved ? null : null, 
+            assignedTo: null, 
             history: [...job.history, {
                 user: loggedInUser.name,
                 action: isApproved ? 'Verified & Completed Job' : `QC Rejected. Reason: ${rejectionReason}`,
@@ -363,15 +390,20 @@ const JobDetailPage = () => {
     const isManager = loggedInUser.role.includes('Manager');
     const isQcManager = loggedInUser.role === 'QC Manager';
 
-    // Simplified conditions for action visibility
-    const canAssign = isManager && (job.stage === 'Pending' || (job.stage === 'WIP' && !job.assignedTo && job.status !== 'QC Pending'));
-    const canReject = isManager && job.stage === 'WIP' && !!job.assignedTo;
-    const canSendToQc = isManager && job.stage === 'WIP' && job.status !== 'QC Pending';
-    const canBeAcceptedByArtisan = isArtisan && job.assignedTo === loggedInUser.id && job.status.startsWith('Assigned to');
-    const canBeWorkedOnByArtisan = isArtisan && job.assignedTo === loggedInUser.id && (job.status.startsWith('In Progress') || job.status.startsWith('Rejected by'));
-    const canBeQcApproved = isQcManager && job.status === 'QC Pending';
+    // Manager Actions Visibility
+    const showApproveAndAssign = isManager && job.stage === 'Pending';
+    const showAssignNextArtisan = isManager && job.stage === 'WIP' && !job.assignedTo;
+    const showReadyForQC = isManager && job.stage === 'WIP';
+    const showManagerReviewActions = isManager && job.stage === 'WIP' && !!job.assignedTo;
+   
+    // Artisan Actions Visibility
+    const showAcceptJob = isArtisan && job.assignedTo === loggedInUser.id && job.status.startsWith('Assigned to');
+    const showArtisanWorkActions = isArtisan && job.assignedTo === loggedInUser.id && (job.status.startsWith('In Progress') || job.status.startsWith('Rework required'));
+
+    // QC Manager Actions Visibility
+    const showQCActions = isQcManager && job.status === 'QC Pending';
     
-    const hasNoActions = !canAssign && !canReject && !canSendToQc && !canBeAcceptedByArtisan && !canBeWorkedOnByArtisan && !canBeQcApproved;
+    const hasNoActions = !showApproveAndAssign && !showAssignNextArtisan && !showReadyForQC && !showManagerReviewActions && !showAcceptJob && !showArtisanWorkActions && !showQCActions;
 
     return (
         <div className="flex-1 space-y-4 p-4 lg:p-6">
@@ -492,10 +524,10 @@ const JobDetailPage = () => {
                         </CardHeader>
                         <CardContent className="space-y-2">
                             {/* Artisan Actions */}
-                            { canBeAcceptedByArtisan && (
+                            { showAcceptJob && (
                                 <Button className="w-full" onClick={() => handleArtisanAction('Accepted')}>Accept Job</Button>
                             )}
-                            { canBeWorkedOnByArtisan && (
+                            { showArtisanWorkActions && (
                                 <>
                                     <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
                                         <DialogTrigger asChild>
@@ -542,10 +574,10 @@ const JobDetailPage = () => {
                             )}
                             
                             {/* Manager Actions */}
-                            { canAssign && (
+                            { showApproveAndAssign && (
                                 <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
                                     <DialogTrigger asChild>
-                                        <Button className="w-full">{job.stage === 'Pending' ? 'Approve & Assign' : 'Assign to Next Artisan'}</Button>
+                                        <Button className="w-full">Approve & Assign</Button>
                                     </DialogTrigger>
                                     <DialogContent className="sm:max-w-[425px]">
                                         <DialogHeader>
@@ -579,42 +611,88 @@ const JobDetailPage = () => {
                                     </DialogContent>
                                 </Dialog>
                             )}
-                            { canSendToQc && (
-                                <Button className="w-full" variant="secondary" onClick={handleManagerReadyForQc}>Ready for QC</Button>
-                            )}
-                            { canReject && (
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="destructive" className="w-full">Reject Artisan's Work</Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Are you sure you want to reject this work?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                This action will send the job back to the artisan for rework. Please provide a reason for rejection.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="reason">Rejection Reason</Label>
-                                            <Textarea 
-                                                id="reason" 
-                                                placeholder="e.g., Casting issue, design not as per spec..." 
-                                                value={rejectionReason}
-                                                onChange={(e) => setRejectionReason(e.target.value)}
-                                            />
+                             { showAssignNextArtisan && (
+                                <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button className="w-full">Assign to Next Artisan</Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-[425px]">
+                                        <DialogHeader>
+                                            <DialogTitle>Assign Job to Artisan</DialogTitle>
+                                            <DialogDescription>
+                                                Select an artisan to assign this job to. They will be notified.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="grid gap-4 py-4">
+                                            <div className="grid grid-cols-4 items-center gap-4">
+                                                <Label htmlFor="artisan" className="text-right">
+                                                    Artisan
+                                                </Label>
+                                                <Select value={selectedArtisan} onValueChange={setSelectedArtisan}>
+                                                    <SelectTrigger id="artisan" className="col-span-3">
+                                                        <SelectValue placeholder="Select an artisan" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {artisans.map(artisan => (
+                                                            <SelectItem key={artisan.id} value={artisan.id}>
+                                                                {artisan.name} - {artisan.role}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
                                         </div>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleRejectArtisanWork} disabled={!rejectionReason}>
-                                                Confirm Rejection
-                                            </AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
+                                        <DialogFooter>
+                                            <Button type="button" onClick={handleAssignJob}>Assign Job</Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                            )}
+                             { showManagerReviewActions && (
+                                <>
+                                    <Button className="w-full" onClick={handleApproveArtisanWork}>
+                                        <ThumbsUp className="mr-2 h-4 w-4" />
+                                        Approve Artisan's Work
+                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" className="w-full">Reject Artisan's Work</Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you sure you want to reject this work?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This action will send the job back to the artisan for rework. Please provide a reason for rejection.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="reason">Rejection Reason</Label>
+                                                <Textarea 
+                                                    id="reason" 
+                                                    placeholder="e.g., Casting issue, design not as per spec..." 
+                                                    value={rejectionReason}
+                                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                                />
+                                            </div>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleRejectArtisanWork} disabled={!rejectionReason}>
+                                                    Confirm Rejection
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </>
+                            )}
+                             { showReadyForQC && (
+                                <Button className="w-full" variant="secondary" onClick={handleManagerReadyForQc}>
+                                     <CheckSquare className="mr-2 h-4 w-4" />
+                                     Ready for QC
+                                </Button>
                             )}
                             
                             {/* QC Manager Actions */}
-                             { canBeQcApproved && (
+                             { showQCActions && (
                                 <>
                                     <Button className="w-full" onClick={() => handleQcAction('approve')}>
                                         <ShieldCheck className="mr-2 h-4 w-4" />
