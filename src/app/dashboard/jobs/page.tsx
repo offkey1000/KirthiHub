@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Camera } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -205,12 +205,20 @@ export default function JobsPage() {
     <div className="flex-1 space-y-4 p-4 lg:p-6 flex flex-col">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold md:text-2xl">Job Pipeline</h1>
-        <Button asChild>
-          <Link href="/dashboard/jobs/create">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create New Job
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+            <Button asChild variant="secondary">
+              <Link href="/dashboard/jobs/quick-create">
+                <Camera className="mr-2 h-4 w-4" />
+                Quick Create
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/dashboard/jobs/create">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Create New Job
+              </Link>
+            </Button>
+        </div>
       </div>
       <KanbanBoard jobs={jobs} />
     </div>
