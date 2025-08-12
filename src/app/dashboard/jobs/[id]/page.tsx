@@ -348,6 +348,10 @@ const JobDetailPage = () => {
     const isManager = loggedInUser?.role.includes('Manager');
     const isQcManager = loggedInUser?.role === 'QC Manager';
 
+    // A manager can reject any job that an artisan is working on (or has just finished)
+    // The job should not be pending approval or already fully completed.
+    const canManagerReject = job.status !== 'Pending Approval' && job.status !== 'Completed';
+
     return (
         <div className="flex-1 space-y-4 p-4 lg:p-6">
             <div className="flex items-center gap-4">
@@ -554,7 +558,7 @@ const JobDetailPage = () => {
                                     
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="destructive" className="w-full" disabled={job.status === 'Completed' || job.status === 'Pending Approval' || !job.status.includes('QC Pending')}>Reject Artisan's Work</Button>
+                                            <Button variant="destructive" className="w-full" disabled={!canManagerReject}>Reject Artisan's Work</Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
