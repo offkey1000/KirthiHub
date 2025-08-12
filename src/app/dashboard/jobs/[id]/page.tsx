@@ -271,6 +271,11 @@ const JobDetailPage = () => {
                 timestamp: new Date().toISOString(),
             }],
         };
+
+        if (action === 'Completed') {
+            updatedJob.status = `QC Pending`; // Or another appropriate status
+        }
+
         updateJobInStorage(updatedJob);
         toast({ title: 'Success', description: `Job has been marked as: ${action}` });
     };
@@ -291,6 +296,7 @@ const JobDetailPage = () => {
     } as const;
 
     const isArtisan = loggedInUser?.role.startsWith('Artisan');
+    const isManager = loggedInUser?.role.includes('Manager');
 
     return (
         <div className="flex-1 space-y-4 p-4 lg:p-6">
@@ -410,9 +416,9 @@ const JobDetailPage = () => {
                             <CardTitle>Actions</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2">
-                             { isArtisan ? (
+                             { isArtisan && job.assignedTo === loggedInUser?.id && (
                                 <>
-                                    <Button className="w-full" onClick={() => handleArtisanAction('Accepted')}>Accept Job</Button>
+                                    <Button className="w-full" onClick={() => handleArtisanAction('Accepted')} disabled={job.status.startsWith('In Progress')}>Accept Job</Button>
                                     <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
                                         <DialogTrigger asChild>
                                             <Button variant="secondary" className="w-full">Upload Finished Work</Button>
@@ -453,9 +459,10 @@ const JobDetailPage = () => {
                                             </DialogFooter>
                                         </DialogContent>
                                     </Dialog>
-                                    <Button variant="destructive" className="w-full" onClick={() => handleArtisanAction('Completed')}>Mark as Complete</Button>
+                                    <Button className="w-full" onClick={() => handleArtisanAction('Completed')}>Mark as Complete</Button>
                                 </>
-                            ) : (
+                            )}
+                            { isManager && (
                                 <>
                                     <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
                                         <DialogTrigger asChild>
