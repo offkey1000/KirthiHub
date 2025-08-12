@@ -259,8 +259,8 @@ const JobDetailPage = () => {
         if (!job || !loggedInUser) return;
         
         const isAccepting = action === 'Accepted';
-        const newStatus = isAccepting ? `In Progress (${loggedInUser.name})` : `Completed by ${loggedInUser.name}`;
-        const actionText = isAccepting ? 'Accepted Job' : 'Marked Job as Complete';
+        const newStatus = isAccepting ? `In Progress (${loggedInUser.name})` : `QC Pending`;
+        const actionText = isAccepting ? 'Accepted Job' : `Marked as Complete`;
 
         const updatedJob = {
             ...job,
@@ -272,13 +272,25 @@ const JobDetailPage = () => {
             }],
         };
 
-        if (action === 'Completed') {
-            updatedJob.status = `QC Pending`; // Or another appropriate status
-        }
-
         updateJobInStorage(updatedJob);
-        toast({ title: 'Success', description: `Job has been marked as: ${action}` });
+        toast({ title: 'Success', description: `Job status updated: ${newStatus}` });
     };
+
+    const handleManagerMarkAsComplete = () => {
+        if (!job || !loggedInUser) return;
+
+        const updatedJob = {
+            ...job,
+            status: 'QC Pending',
+            history: [...job.history, {
+                user: loggedInUser.name,
+                action: 'Forwarded to QC',
+                timestamp: new Date().toISOString(),
+            }],
+        };
+        updateJobInStorage(updatedJob);
+        toast({ title: 'Success', description: 'Job has been sent for Quality Control.' });
+    }
 
     if (!job) {
         return (
@@ -416,7 +428,7 @@ const JobDetailPage = () => {
                             <CardTitle>Actions</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2">
-                             { isArtisan && job.assignedTo === loggedInUser?.id && (
+                             { isArtisan && job.assignedTo === loggedInUser?.id && !job.status.includes('Completed') && !job.status.includes('QC') && (
                                 <>
                                     <Button className="w-full" onClick={() => handleArtisanAction('Accepted')} disabled={job.status.startsWith('In Progress')}>Accept Job</Button>
                                     <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
@@ -459,7 +471,7 @@ const JobDetailPage = () => {
                                             </DialogFooter>
                                         </DialogContent>
                                     </Dialog>
-                                    <Button className="w-full" onClick={() => handleArtisanAction('Completed')}>Mark as Complete</Button>
+                                    <Button className="w-full" onClick={() => handleArtisanAction('Completed')} disabled={!job.status.startsWith('In Progress')}>Mark as Complete</Button>
                                 </>
                             )}
                             { isManager && (
@@ -500,7 +512,7 @@ const JobDetailPage = () => {
                                         </DialogContent>
                                     </Dialog>
 
-                                    <Button variant="secondary" className="w-full">Mark as Complete</Button>
+                                    <Button variant="secondary" className="w-full" onClick={handleManagerMarkAsComplete}>Forward to QC</Button>
                                     
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
@@ -541,3 +553,5 @@ const JobDetailPage = () => {
 };
 
 export default JobDetailPage;
+
+    
