@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,17 +36,8 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getAllJobs } from '@/lib/job-storage';
+import { Job, User } from '@/lib/schema';
 
-type User = {
-    id: string;
-    role: string;
-};
-
-type Job = {
-    id: string;
-    stage: 'Pending' | 'WIP' | 'Completed';
-    assignedTo: string | null;
-}
 
 export default function DashboardLayout({
   children,
@@ -59,26 +50,30 @@ export default function DashboardLayout({
   const [isLoading, setIsLoading] = useState(true);
   const [jobCount, setJobCount] = useState(0);
 
+  const fetchJobCount = useCallback(async (currentUser: User) => {
+    const jobs: Job[] = await getAllJobs();
+    
+    if (currentUser.role.startsWith('Artisan')) {
+        const assignedJobs = jobs.filter(job => job.assignedTo === currentUser.id);
+        setJobCount(assignedJobs.length);
+    } else {
+        const activeJobs = jobs.filter(job => job.stage !== 'Completed');
+        setJobCount(activeJobs.length);
+    }
+  }, []);
+
   useEffect(() => {
     const storedUser = localStorage.getItem('loggedInUser');
-    const jobs: Job[] = getAllJobs();
     
     if (storedUser) {
         const currentUser = JSON.parse(storedUser);
         setUser(currentUser);
-
-        if (currentUser.role.startsWith('Artisan')) {
-            const assignedJobs = jobs.filter(job => job.assignedTo === currentUser.id);
-            setJobCount(assignedJobs.length);
-        } else {
-            const activeJobs = jobs.filter(job => job.stage !== 'Completed');
-            setJobCount(activeJobs.length);
-        }
+        fetchJobCount(currentUser);
     } else {
         router.push('/');
     }
     setIsLoading(false);
-  }, [pathname, router]); 
+  }, [pathname, router, fetchJobCount]); 
   
   const handleLogout = () => {
     localStorage.removeItem('loggedInUser');
@@ -250,7 +245,7 @@ export default function DashboardLayout({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>My Account ({user.role})</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>Settings</DropdownMenuItem>
               <DropdownMenuItem>Support</DropdownMenuItem>

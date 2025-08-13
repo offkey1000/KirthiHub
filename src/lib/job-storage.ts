@@ -1,69 +1,64 @@
-'use client';
 
-// This file manages job data, acting as a mock database.
-// It uses localStorage to persist data across browser sessions.
+'use server';
 
-const JOBS_STORAGE_KEY = 'jewelflow-jobs';
+import 'dotenv/config';
+import { db } from './db';
+import { jobs, NewJob, Job } from './schema';
+import { eq } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
 
-const initialJobs: any[] = [];
-
-type Job = {
-  id: string;
-  title: string;
-  orderType: string;
-  customerOrderNumber?: string;
-  urgency: 'High' | 'Medium' | 'Low';
-  budget: number;
-  ornamentType: string;
-  goldWeight: number;
-  diamondWeight: number;
-  stoneWeight: number;
-  description: string;
-  images: string[];
-  status: string;
-  stage: 'Pending' | 'WIP' | 'Completed';
-  history: { user: string; action: string; timestamp: string }[];
-  assignedTo: string | null;
-};
-
-// Initialize jobs in localStorage if it's the first time
-const initializeJobs = () => {
-    if (typeof window !== 'undefined') {
-        const storedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
-        if (!storedJobs) {
-            localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(initialJobs));
+// This is a placeholder for a real seeding mechanism
+async function seedInitialJobs() {
+    try {
+        const existingJobs = await db.select().from(jobs);
+        if (existingJobs.length === 0) {
+            console.log('Seeding initial jobs...');
+            // Add any initial jobs you need for testing here
+            // const initialJobsData: NewJob[] = [];
+            // if (initialJobsData.length > 0) {
+            //   await db.insert(jobs).values(initialJobsData);
+            // }
         }
+    } catch (error) {
+        // This might happen if the table doesn't exist yet during the first build.
+        console.warn('Could not seed jobs, this might be okay on first run:', error);
+    }
+}
+
+seedInitialJobs();
+
+export const getAllJobs = async (): Promise<Job[]> => {
+    try {
+        return await db.select().from(jobs);
+    } catch (e) {
+        console.error("Failed to fetch jobs", e);
+        return [];
     }
 };
 
-// Call initialization when the module is loaded
-initializeJobs();
-
-
-export const getAllJobs = (): Job[] => {
-    if (typeof window === 'undefined') return [];
-    const storedJobs = localStorage.getItem(JOBS_STORAGE_KEY);
-    return storedJobs ? JSON.parse(storedJobs) : [];
-};
-
-export const getJobById = (id: string): Job | null => {
-    const jobs = getAllJobs();
-    return jobs.find(j => j.id === id) || null;
-};
-
-export const saveAllJobs = (jobs: Job[]) => {
-    if (typeof window !== 'undefined') {
-        localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(jobs));
+export const getJobById = async (id: string): Promise<Job | null> => {
+    try {
+        const result = await db.select().from(jobs).where(eq(jobs.id, id)).limit(1);
+        return result[0] || null;
+    } catch (e) {
+        console.error(`Failed to fetch job ${id}`, e);
+        return null;
     }
 };
 
-export const addJob = (newJob: Job) => {
-    const jobs = getAllJobs();
-    saveAllJobs([...jobs, newJob]);
+export const addJob = async (newJob: NewJob) => {
+    await db.insert(jobs).values(newJob);
+    revalidatePath('/dashboard/jobs');
+    revalidatePath('/dashboard');
 };
 
-export const updateJob = (updatedJob: Job) => {
-    const jobs = getAllJobs();
-    const updatedJobs = jobs.map(j => j.id === updatedJob.id ? updatedJob : j);
-    saveAllJobs(updatedJobs);
+export const updateJob = async (updatedJob: Job) => {
+    if (!updatedJob.id) {
+        throw new Error('Job ID is required for updates');
+    }
+    await db.update(jobs).set(updatedJob).where(eq(jobs.id, updatedJob.id));
+    revalidatePath(`/dashboard/jobs/${updatedJob.id}`);
+    revalidatePath('/dashboard/jobs');
+    revalidatePath('/dashboard/my-jobs');
+    revalidatePath('/dashboard');
 };

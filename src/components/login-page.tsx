@@ -16,16 +16,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Gem, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { getAllUsers } from '@/lib/user-storage';
-
-
-type User = {
-    id: string;
-    name: string;
-    role: string;
-    status: string;
-    code: string;
-};
+import { getUserByCode } from '@/lib/user-storage';
+import { User } from '@/lib/schema';
 
 
 export function LoginPage() {
@@ -34,16 +26,14 @@ export function LoginPage() {
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    const allUsers: User[] = getAllUsers();
-    
-    const validUser = allUsers.find(user => user.code === code && user.status === 'Active');
+    try {
+        const validUser = await getUserByCode(code);
 
-    setTimeout(() => {
-        if (validUser) {
+        if (validUser && validUser.status === 'Active') {
           localStorage.setItem('loggedInUser', JSON.stringify(validUser));
           router.push('/dashboard');
         } else {
@@ -54,7 +44,14 @@ export function LoginPage() {
           });
           setIsLoading(false);
         }
-    }, 500); // Simulate network delay
+    } catch(e) {
+        toast({
+            variant: 'destructive',
+            title: 'Login Error',
+            description: 'Could not connect to the database. Please try again later.',
+        });
+        setIsLoading(false);
+    }
   };
 
   return (
@@ -84,7 +81,7 @@ export function LoginPage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading || !code}>
               <LogIn className="mr-2 h-4 w-4" />
               {isLoading ? 'Signing In...' : 'Sign In'}
             </Button>

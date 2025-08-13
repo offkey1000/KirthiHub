@@ -22,6 +22,7 @@ import {
 import { ArrowUpRight, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { getAllUsers } from '@/lib/user-storage';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type User = {
     id: string;
@@ -33,9 +34,16 @@ type User = {
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setUsers(getAllUsers());
+    const fetchUsers = async () => {
+      setLoading(true);
+      const fetchedUsers = await getAllUsers();
+      setUsers(fetchedUsers);
+      setLoading(false);
+    }
+    fetchUsers();
   }, []);
 
   return (
@@ -67,36 +75,53 @@ export default function UsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell>
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {user.id}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{user.role}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        user.status === 'Active' ? 'secondary' : 'destructive'
-                      }
-                    >
-                      {user.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button asChild variant="ghost" size="icon">
-                      <Link href={`/dashboard/users/${user.id}`}>
-                        <ArrowUpRight className="h-4 w-4" />
-                         <span className="sr-only">View User</span>
-                      </Link>
-                    </Button>
+              {loading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-8 w-8 inline-block" /></TableCell>
+                  </TableRow>
+                ))
+              ) : users.length > 0 ? (
+                users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div className="font-medium">{user.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {user.id}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{user.role}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          user.status === 'Active' ? 'secondary' : 'destructive'
+                        }
+                      >
+                        {user.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button asChild variant="ghost" size="icon">
+                        <Link href={`/dashboard/users/${user.id}`}>
+                          <ArrowUpRight className="h-4 w-4" />
+                           <span className="sr-only">View User</span>
+                        </Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-24 text-center">
+                    No users found.
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>

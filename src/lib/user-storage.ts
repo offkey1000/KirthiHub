@@ -1,65 +1,79 @@
-'use client';
 
-// This file manages user data, acting as a mock database.
-// It uses localStorage to persist data across browser sessions.
+'use server';
 
-const USERS_STORAGE_KEY = 'jewelflow-users';
+import 'dotenv/config';
+import { db } from './db';
+import { users, NewUser, User } from './schema';
+import { eq } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
 
-const initialUsers = [
-  {
-    id: 'USR001',
-    name: 'Admin User',
-    role: 'Admin',
-    status: 'Active',
-    code: '4243',
-  },
-];
+async function seedInitialUser() {
+  try {
+    const allUsers = await db.select().from(users);
+    const adminUserExists = allUsers.some(u => u.role === 'Admin');
 
-type User = typeof initialUsers[0];
+    if (!adminUserExists) {
+        console.log('Seeding initial admin user...');
+        await db.insert(users).values({
+            id: 'USR001',
+            name: 'Admin User',
+            role: 'Admin',
+            status: 'Active',
+            code: '4243',
+        });
+    }
+  } catch (error) {
+      // This might happen if the table doesn't exist yet during the first build.
+      console.warn("Could not seed admin user, this might be okay on first run:", error)
+  }
+}
 
-// Initialize users in localStorage if it's the first time
-const initializeUsers = () => {
-    if (typeof window !== 'undefined') {
-        const storedUsers = localStorage.getItem(USERS_STORAGE_KEY);
-        if (!storedUsers) {
-            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(initialUsers));
-        }
+seedInitialUser();
+
+export const getAllUsers = async (): Promise<User[]> => {
+    try {
+        return await db.select().from(users);
+    } catch(e) {
+        console.error("Failed to fetch users", e);
+        return [];
     }
 };
 
-// Call initialization when the module is loaded
-initializeUsers();
-
-export const getAllUsers = (): User[] => {
-    if (typeof window === 'undefined') return initialUsers;
-    const storedUsers = localStorage.getItem(USERS_STORAGE_KEY);
-    return storedUsers ? JSON.parse(storedUsers) : initialUsers;
-};
-
-export const getUserById = (id: string): User | null => {
-    const users = getAllUsers();
-    return users.find(u => u.id === id) || null;
-};
-
-export const saveAllUsers = (users: User[]) => {
-    if (typeof window !== 'undefined') {
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+export const getUserById = async (id: string): Promise<User | null> => {
+    try {
+        const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+        return result[0] || null;
+    } catch(e) {
+        console.error(`Failed to fetch user ${id}`, e);
+        return null;
     }
 };
 
-export const addUser = (newUser: User) => {
-    const users = getAllUsers();
-    saveAllUsers([...users, newUser]);
+export const getUserByCode = async (code: string): Promise<User | null> => {
+    try {
+        const result = await db.select().from(users).where(eq(users.code, code)).limit(1);
+        return result[0] || null;
+    } catch (e) {
+        console.error("Failed to fetch user by code", e);
+        return null;
+    }
+}
+
+export const addUser = async (newUser: NewUser) => {
+    await db.insert(users).values(newUser);
+    revalidatePath('/dashboard/users');
 };
 
-export const updateUser = (updatedUser: User) => {
-    const users = getAllUsers();
-    const updatedUsers = users.map(u => u.id === updatedUser.id ? updatedUser : u);
-    saveAllUsers(updatedUsers);
+export const updateUser = async (updatedUser: User) => {
+    if (!updatedUser.id) {
+        throw new Error('User ID is required for updates');
+    }
+    await db.update(users).set(updatedUser).where(eq(users.id, updatedUser.id));
+    revalidatePath('/dashboard/users');
+    revalidatePath(`/dashboard/users/${updatedUser.id}`);
 };
 
-export const deleteUserById = (id: string) => {
-    const users = getAllUsers();
-    const updatedUsers = users.filter(u => u.id !== id);
-    saveAllUsers(updatedUsers);
+export const deleteUserById = async (id: string) => {
+    await db.delete(users).where(eq(users.id, id));
+    revalidatePath('/dashboard/users');
 };

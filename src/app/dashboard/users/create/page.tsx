@@ -7,27 +7,37 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { addUser } from '@/lib/user-storage';
+import type { NewUser } from '@/lib/schema';
 
 export default function CreateUserPage() {
   const router = useRouter();
   const { toast } = useToast();
 
   const handleCreateUser = async (data: any) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const newUser = {
-        ...data,
-        id: `USR${Math.floor(Math.random() * 900) + 100}`
+    const newUser: NewUser = {
+        id: `USR${Math.floor(Math.random() * 900) + 100}`,
+        name: data.name,
+        role: data.role,
+        status: data.status,
+        code: data.code
     };
 
-    addUser(newUser);
-
-    toast({
-      title: 'User Created',
-      description: `The user ${data.name} has been created.`,
-    });
-    router.push('/dashboard/users');
+    try {
+        await addUser(newUser);
+        toast({
+          title: 'User Created',
+          description: `The user ${data.name} has been created.`,
+        });
+        router.push('/dashboard/users');
+        router.refresh();
+    } catch (error) {
+        console.error(error);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to create user.',
+        });
+    }
   };
 
   return (

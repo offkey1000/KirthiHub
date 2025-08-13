@@ -22,14 +22,8 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Sparkles } from 'lucide-react';
+import type { User } from '@/lib/schema';
 
-type User = {
-  id: string;
-  name: string;
-  role: string;
-  status: string;
-  code?: string;
-};
 
 interface UserFormProps {
     user: User | null;
@@ -66,18 +60,24 @@ export function UserForm({ user, onSubmit, onDelete }: UserFormProps) {
     setIsSubmitting(true);
     const formData = new FormData(event.currentTarget);
     const data = Object.fromEntries(formData.entries());
+    
+    // Ensure status is correctly typed
+    const status = data.status as 'Active' | 'Inactive';
+
     if (isCreateMode) {
         data.code = code;
     }
     
-    await onSubmit(data);
+    await onSubmit({ ...data, status });
 
     setIsSubmitting(false);
   };
   
   const handleDelete = async () => {
     if(onDelete && confirm(`Are you sure you want to delete user ${user?.name}? This action cannot be undone.`)) {
+        setIsSubmitting(true);
         await onDelete();
+        setIsSubmitting(false);
     }
   }
 
@@ -98,7 +98,7 @@ export function UserForm({ user, onSubmit, onDelete }: UserFormProps) {
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="role">Role</Label>
-                    <Select name="role" defaultValue={user?.role}>
+                    <Select name="role" defaultValue={user?.role} required>
                     <SelectTrigger id="role">
                         <SelectValue placeholder="Select a role" />
                     </SelectTrigger>
@@ -118,7 +118,7 @@ export function UserForm({ user, onSubmit, onDelete }: UserFormProps) {
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="status">Status</Label>
-                    <Select name="status" defaultValue={user?.status ?? 'Active'}>
+                    <Select name="status" defaultValue={user?.status ?? 'Active'} required>
                     <SelectTrigger id="status">
                         <SelectValue placeholder="Select a status" />
                     </SelectTrigger>
@@ -161,11 +161,13 @@ export function UserForm({ user, onSubmit, onDelete }: UserFormProps) {
              <div className="flex justify-between pt-4">
                 <div>
                     {!isCreateMode && (
-                        <Button type="button" variant="destructive" onClick={handleDelete}>Delete User</Button>
+                        <Button type="button" variant="destructive" onClick={handleDelete} disabled={isSubmitting}>
+                            {isSubmitting ? 'Deleting...' : 'Delete User'}
+                        </Button>
                     )}
                 </div>
                 <div className="flex gap-2">
-                    <Button type="button" variant="outline" onClick={() => router.push('/dashboard/users')}>
+                    <Button type="button" variant="outline" onClick={() => router.push('/dashboard/users')} disabled={isSubmitting}>
                         Cancel
                     </Button>
                     <Button type="submit" disabled={isSubmitting}>
